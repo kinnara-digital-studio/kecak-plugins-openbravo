@@ -2,8 +2,6 @@ package com.kinnara.kecakplugins.openbravo;
 
 import com.kinnara.kecakplugins.openbravo.commons.RestMixin;
 import com.kinnara.kecakplugins.openbravo.exceptions.OpenbravoClientException;
-import com.kinnarastudio.commons.Try;
-import com.kinnarastudio.commons.jsonstream.JSONStream;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -26,6 +24,11 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Openbravo Record Activation DataList Action
+ *
+ * Activate / deactivate openbravo record(s)
+ */
 public class OpenbravoRecordActivationDataListAction extends DataListActionDefault implements RestMixin {
     @Override
     public String getLinkLabel() {
@@ -79,7 +82,7 @@ public class OpenbravoRecordActivationDataListAction extends DataListActionDefau
 
         if (rowKeys != null) {
             final StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity()));
-            if(getPropertyNoFilterActive()) {
+                if(getPropertyNoFilterActive()) {
                 addUrlParameter(url, "_noActiveFilter", "true");
             }
 
@@ -173,15 +176,6 @@ public class OpenbravoRecordActivationDataListAction extends DataListActionDefau
 
     protected String getApiEndPoint(String baseUrl, String tableEntity) {
         return baseUrl + "/org.openbravo.service.json.jsonrest/" + tableEntity;
-    }
-
-    protected String getApiEndPoint(String baseUrl, String tableEntity, String primaryKey) {
-        return baseUrl + "/org.openbravo.service.json.jsonrest/" + tableEntity + "/" + primaryKey;
-    }
-
-    protected FormRow convertJson(JSONObject json) {
-        return JSONStream.of(json, Try.onBiFunction(JSONObject::getString))
-                .collect(FormRow::new, (row, e) -> row.setProperty(e.getKey(), e.getValue()), FormRow::putAll);
     }
 
     protected boolean getPropertyNoFilterActive() {

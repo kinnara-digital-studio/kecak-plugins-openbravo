@@ -26,6 +26,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Openbravo Form Binder
+ *
+ *
+ */
 public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBinder, FormStoreElementBinder, RestMixin {
     @Override
     public FormRowSet load(Element element, String primaryKey, FormData formData) {
