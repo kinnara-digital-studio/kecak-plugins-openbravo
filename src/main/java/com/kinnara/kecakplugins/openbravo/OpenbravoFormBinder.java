@@ -9,6 +9,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.form.model.*;
+import org.joget.apps.form.service.FormUtil;
 import org.joget.commons.util.LogUtil;
 import org.joget.workflow.model.WorkflowAssignment;
 import org.joget.workflow.model.WorkflowProcessLink;
@@ -34,10 +35,16 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
                 .map(workflowManager::getAssignment)
                 .orElse(null);
 
+        final Form form = FormUtil.findRootForm(element);
+        final StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity(form), primaryKey));
+        if(getPropertyNoFilterActive()) {
+            addUrlParameter(url, "_noActiveFilter", "true");
+        }
+
+        final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
+
         try {
-            final String url = getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity(), primaryKey);
-            final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
-            final HttpUriRequest request = getHttpRequest(workflowAssignment, url, "GET", headers);
+            final HttpUriRequest request = getHttpRequest(workflowAssignment, url.toString(), "GET", headers);
             final HttpClient client = getHttpClient(isIgnoreCertificateError());
             final HttpResponse response = client.execute(request);
 
@@ -76,18 +83,20 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
                 .map(workflowManager::getAssignment)
                 .orElse(null);
 
+        final Form form = FormUtil.findRootForm(element);
+        final String url = getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity(form));
+        final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
+        final FormRow row = rowSet.get(0);
+        if(!isNewRecord(formData)) {
+            final String primaryKey = Optional.of(formData)
+                    .map(FormData::getProcessId)
+                    .map(workflowManager::getWorkflowProcessLink)
+                    .map(WorkflowProcessLink::getOriginProcessId)
+                    .orElse(formData.getPrimaryKeyValue().replaceAll("-", ""));
+            row.setId(primaryKey);
+        }
+
         try {
-            final String url = getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity());
-            final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
-            final FormRow row = rowSet.get(0);
-            if(!isNewRecord(formData)) {
-                final String primaryKey = Optional.of(formData)
-                        .map(FormData::getProcessId)
-                        .map(workflowManager::getWorkflowProcessLink)
-                        .map(WorkflowProcessLink::getOriginProcessId)
-                        .orElse(formData.getPrimaryKeyValue().replaceAll("-", ""));
-                row.setId(primaryKey);
-            }
             final HttpUriRequest request = getHttpRequest(workflowAssignment, url, "PUT", headers, row);
             final HttpClient client = getHttpClient(isIgnoreCertificateError());
             final HttpResponse response = client.execute(request);
@@ -152,8 +161,9 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
         return AppUtil.processHashVariable(getPropertyString("baseUrl"), null, null, null);
     }
 
-    protected String getPropertyTableEntity() {
-        return AppUtil.processHashVariable(getPropertyString("tableEntity"), null, null, null);
+    protected String getPropertyTableEntity(Form form) {
+        return form.getPropertyString(FormUtil.PROPERTY_TABLE_NAME);
+//        return AppUtil.processHashVariable(getPropertyString("tableEntity"), null, null, null);
     }
 
     protected String getPropertyUsername() {

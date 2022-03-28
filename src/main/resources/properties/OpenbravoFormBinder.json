@@ -1,16 +1,10 @@
 [
   {
-    "title" :  "Openbravo Form Binder",
+    "title" :  "@@openbravo.openbravoFormBinder@@",
     "properties": [
       {
         "name": "baseUrl",
         "label": "Base URL",
-        "type": "textfield",
-        "required": "true"
-      },
-      {
-        "name": "tableEntity",
-        "label": "Table Entity Name",
         "type": "textfield",
         "required": "true"
       },
@@ -27,7 +21,12 @@
         "name": "password",
         "label": "@@openbravo.password@@",
         "type": "password"
-      },
+      }
+    ]
+  },
+  {
+    "title": "Advance",
+    "properties" : [
       {
         "name": "noFilterActive",
         "label": "@@openbravo.noFilterActive@@",
@@ -39,16 +38,12 @@
             "label": ""
           }
         ]
-      }
-    ]
-  },
-  {
-    "title": "Advance",
-    "properties" : [
+      },
       {
         "name" : "ignoreCertificateError",
         "label" : "@@openbravo.ignoreCertificateError@@",
         "type" : "checkbox",
+        "value": "",
         "options" : [
           {
             "value" : "true",

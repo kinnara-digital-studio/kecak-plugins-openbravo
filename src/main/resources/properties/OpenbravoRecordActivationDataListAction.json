@@ -1,0 +1,98 @@
+[
+  {
+    "title": "@@openbravo.openbravoRecordActivationDataListAction@@",
+    "properties": [
+      {
+        "name": "label",
+        "label": "@@openbravo.label@@",
+        "type": "textfield"
+      },
+      {
+        "name": "confirmation",
+        "label": "@@openbravo.confirmation@@",
+        "type": "textfield"
+      }
+    ]
+  },
+  {
+    "title": "Connection",
+    "properties": [
+      {
+        "name": "baseUrl",
+        "label": "@@openbravo.baseUrl@@",
+        "type": "textfield",
+        "required": "true"
+      },
+      {
+        "name": "tableEntity",
+        "label": "@@openbravo.tableEntity@@",
+        "type": "textfield",
+        "required": "true"
+      },
+      {
+        "label": "Authentication",
+        "type": "header"
+      },
+      {
+        "name": "username",
+        "label": "@@openbravo.username@@",
+        "type": "textfield"
+      },
+      {
+        "name": "password",
+        "label": "@@openbravo.password@@",
+        "type": "password"
+      },
+      {
+        "label": "Action",
+        "type": "header"
+      },
+      {
+        "name": "mode",
+        "label": "@@openbravo.activationMode@@",
+        "type": "radio",
+        "required": "true",
+        "value": "deactivate",
+        "options": [
+          {
+            "value": "activate",
+            "label": "@@openbravo.activationMode.activate@@"
+          },
+          {
+            "value": "deactivate",
+            "label": "@@openbravo.activationMode.deactivate@@"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Advance",
+    "properties" : [
+      {
+        "name": "noFilterActive",
+        "label": "@@openbravo.noFilterActive@@",
+        "type": "checkbox",
+        "value": "",
+        "options": [
+          {
+            "value": "true",
+            "label": ""
+          }
+        ]
+      },
+      {
+        "name" : "ignoreCertificateError",
+        "label" : "@@openbravo.ignoreCertificateError@@",
+        "type" : "checkbox",
+        "value": "",
+        "options" : [
+          {
+            "value" : "true",
+            "label" : ""
+          }
+        ]
+      }
+    ]
+  }
+]

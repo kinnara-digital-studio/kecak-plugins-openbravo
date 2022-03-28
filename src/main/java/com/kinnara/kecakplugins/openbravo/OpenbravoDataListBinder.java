@@ -121,6 +121,8 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         try {
             final StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity()));
 
+            addUrlParameter(url, "_selectedProperties", "id");
+
             addUrlParameter(url, "_endRow", getPropertyFetchLimit());
 
             if(getPropertyNoFilterActive()) {
@@ -188,10 +190,6 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
     @Override
     public String getPropertyOptions() {
         return AppUtil.readPluginResource(getClassName(), "/properties/OpenbravoDataListBinder.json", null, false, "/messages/Openbravo");
-    }
-
-    protected void addUrlParameter(@Nonnull final StringBuilder url, String parameterName, String parameterValue) {
-        url.append(String.format("%s%s=%s", (url.toString().contains("?") ? "&" : "?"), parameterName, parameterValue));
     }
 
     protected String getPropertyBaseUrl() {
