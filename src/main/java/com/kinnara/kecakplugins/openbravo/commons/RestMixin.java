@@ -347,6 +347,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
                 final JSONObject jsonRequest = new JSONObject();
                 jsonRequest.put("data", jsonData);
 
+                LogUtil.info(getClassName(), "jsonData : ["+jsonData+"]");
                 httpEntity = getJsonRequestEntity(jsonRequest.toString(), assignment);
             } catch (JSONException e) {
                 throw new OpenbravoClientException(e);

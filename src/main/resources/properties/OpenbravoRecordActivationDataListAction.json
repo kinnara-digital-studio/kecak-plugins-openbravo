@@ -51,6 +51,7 @@
         "name": "mode",
         "label": "@@openbravo.activationMode@@",
         "type": "radio",
+        "description": "@@openbravo.activationMode.desc@@",
         "required": "true",
         "value": "deactivate",
         "options": [
@@ -61,6 +62,23 @@
           {
             "value": "deactivate",
             "label": "@@openbravo.activationMode.deactivate@@"
+          },
+          {
+            "value": "toggle",
+            "label": "@@openbravo.activationMode.toggle@@"
+          }
+        ]
+      },
+      {
+        "name": "isRowAction",
+        "label": "@@openbravo.isRowAction@@",
+        "type": "checkbox",
+        "description": "@@openbravo.isRowAction.desc@@",
+        "value": "true",
+        "options": [
+          {
+            "value": "true",
+            "label": ""
           }
         ]
       }
@@ -69,18 +87,6 @@
   {
     "title": "Advance",
     "properties" : [
-      {
-        "name": "noFilterActive",
-        "label": "@@openbravo.noFilterActive@@",
-        "type": "checkbox",
-        "value": "",
-        "options": [
-          {
-            "value": "true",
-            "label": ""
-          }
-        ]
-      },
       {
         "name" : "ignoreCertificateError",
         "label" : "@@openbravo.ignoreCertificateError@@",

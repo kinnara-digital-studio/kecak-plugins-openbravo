@@ -5,10 +5,12 @@ import com.kinnara.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.displaytag.util.LookupUtil;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.model.DataList;
 import org.joget.apps.datalist.model.DataListActionDefault;
 import org.joget.apps.datalist.model.DataListActionResult;
+import org.joget.apps.datalist.model.DataListCollection;
 import org.joget.apps.form.model.FormRow;
 import org.joget.commons.util.LogUtil;
 import org.joget.workflow.util.WorkflowUtil;
@@ -19,9 +21,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Map;
+import java.net.URLEncoder;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -70,28 +71,35 @@ public class OpenbravoRecordActivationDataListAction extends DataListActionDefau
 
     @Override
     public DataListActionResult executeAction(DataList dataList, String[] rowKeys) {
+        final String primaryKeyColumn = dataList.getBinder().getPrimaryKeyColumnName();
         final DataListActionResult result = new DataListActionResult();
         result.setType(DataListActionResult.TYPE_REDIRECT);
         result.setUrl("REFERER");
 
         // only allow POST
-        HttpServletRequest servletRequest = WorkflowUtil.getHttpServletRequest();
+        final HttpServletRequest servletRequest = WorkflowUtil.getHttpServletRequest();
         if (servletRequest != null && !"POST".equalsIgnoreCase(servletRequest.getMethod())) {
             return null;
         }
 
-        if (rowKeys != null) {
+        if (rowKeys != null && rowKeys.length > 0) {
             final StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity()));
-                if(getPropertyNoFilterActive()) {
-                addUrlParameter(url, "_noActiveFilter", "true");
-            }
-
             final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
+
+            final DataListCollection<Map<String, String>> sortedDataListCollection = dataList.getRows();
+            sortedDataListCollection.sort(Comparator.comparing(m -> m.getOrDefault(primaryKeyColumn, "")));
+
             for (String rowKey : rowKeys) {
                 try {
                     final FormRow row = new FormRow();
                     row.setId(rowKey);
-                    row.setProperty("active", String.valueOf("activate".equalsIgnoreCase(getPropertyActivationMode())));
+
+                    if("toggle".equalsIgnoreCase(getPropertyActivationMode())) {
+                        final boolean isCurrentlyActive = "true".equalsIgnoreCase(getValue(sortedDataListCollection, primaryKeyColumn, rowKey, "active"));
+                        row.setProperty("active", String.valueOf(!isCurrentlyActive));
+                    } else {
+                        row.setProperty("active", String.valueOf("activate".equalsIgnoreCase(getPropertyActivationMode())));
+                    }
 
                     final HttpUriRequest request = getHttpRequest(null, url.toString(), "PUT", headers, row);
                     final HttpClient client = getHttpClient(isIgnoreCertificateError());
@@ -117,6 +125,10 @@ public class OpenbravoRecordActivationDataListAction extends DataListActionDefau
                     }
                 } catch (OpenbravoClientException | IOException | JSONException e) {
                     LogUtil.error(getClassName(), e, e.getMessage());
+                }
+
+                if(isRowAction()) {
+                    break;
                 }
             }
         }
@@ -178,11 +190,23 @@ public class OpenbravoRecordActivationDataListAction extends DataListActionDefau
         return baseUrl + "/org.openbravo.service.json.jsonrest/" + tableEntity;
     }
 
-    protected boolean getPropertyNoFilterActive() {
-        return "true".equalsIgnoreCase(getPropertyString("noFilterActive"));
+    protected String getPropertyActivationMode() {
+        return getPropertyString("mode");
     }
 
-    protected String getPropertyActivationMode() {
-        return getPropertyString("activationMode");
+    protected String getValue(@SuppressWarnings("rawtypes") DataListCollection<Map<String, String>> sortedRows, String primaryKeyColumnName, String key, String columnName) {
+        final Map<String, String> searchKey = new HashMap<>();
+        searchKey.put(primaryKeyColumnName, key);
+
+        final int index = Collections.binarySearch(sortedRows, searchKey, Comparator.comparing(m -> m.getOrDefault(primaryKeyColumnName, "")));
+        if(index >= 0) {
+            return sortedRows.get(index).getOrDefault(columnName, "");
+        }
+
+        return "";
+    }
+
+    protected boolean isRowAction() {
+        return "true".equalsIgnoreCase(getPropertyString("isRowAction"));
     }
 }
