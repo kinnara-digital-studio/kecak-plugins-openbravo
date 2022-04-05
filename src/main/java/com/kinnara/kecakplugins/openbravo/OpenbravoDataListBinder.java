@@ -71,7 +71,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
             }
 
             if(rows != null) {
-                addUrlParameter(url, "_endRow", String.valueOf((start == null ? 0 : start) + rows - 1));
+                addUrlParameter(url, "_endRow", String.valueOf((start == null ? 0 : start) + rows));
             }
 
             final String whereCondition = getWhereCondition(filterQueryObjects);
