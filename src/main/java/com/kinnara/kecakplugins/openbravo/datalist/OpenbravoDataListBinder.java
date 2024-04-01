@@ -1,4 +1,4 @@
-package com.kinnara.kecakplugins.openbravo;
+package com.kinnara.kecakplugins.openbravo.datalist;
 
 import com.kinnara.kecakplugins.openbravo.commons.RestMixin;
 import com.kinnara.kecakplugins.openbravo.exceptions.OpenbravoClientException;
@@ -28,24 +28,21 @@ import java.util.stream.Stream;
 
 /**
  * Openbravo DataList Binder
- *
  */
 public class OpenbravoDataListBinder extends DataListBinderDefault implements RestMixin {
     @Override
     public DataListColumn[] getColumns() {
-        return Optional.ofNullable(getData(null, null, null, null,null, null, 1))
+        return Optional.ofNullable(getData(null, null, null, null, null, null, 1))
                 .map(Collection::stream)
                 .orElseGet(Stream::empty)
                 .findFirst()
                 .map(Map::keySet)
                 .map(Collection::stream)
                 .orElseGet(Stream::empty)
-                .map(s -> {
-                    final DataListColumn column = new DataListColumn();
-                    column.setName(s);
-                    column.setLabel(s);
-                    return column;
-                })
+                .map(s -> new DataListColumn() {{
+                    setName(s);
+                    setLabel(s);
+                }})
                 .toArray(DataListColumn[]::new);
     }
 
@@ -59,24 +56,24 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         try {
             final StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity()));
 
-            if(getPropertyNoFilterActive()) {
+            if (getPropertyNoFilterActive()) {
                 addUrlParameter(url, "_noActiveFilter", "true");
             }
 
-            if(sort != null && !sort.isEmpty()) {
+            if (sort != null && !sort.isEmpty()) {
                 addUrlParameter(url, "_sortBy", sort);
             }
 
-            if(start != null) {
+            if (start != null) {
                 addUrlParameter(url, "_startRow", String.valueOf(start));
             }
 
-            if(rows != null) {
+            if (rows != null) {
                 addUrlParameter(url, "_endRow", String.valueOf((start == null ? 0 : start) + rows));
             }
 
             final String whereCondition = getWhereCondition(filterQueryObjects);
-            if(!whereCondition.isEmpty()) {
+            if (!whereCondition.isEmpty()) {
                 addUrlParameter(url, "_where", whereCondition);
             }
 
@@ -124,12 +121,12 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
 
             addUrlParameter(url, "_endRow", getPropertyFetchLimit());
 
-            if(getPropertyNoFilterActive()) {
+            if (getPropertyNoFilterActive()) {
                 addUrlParameter(url, "_noActiveFilter", "true");
             }
 
             final String whereCondition = getWhereCondition(filterQueryObjects);
-            if(!whereCondition.isEmpty()) {
+            if (!whereCondition.isEmpty()) {
                 addUrlParameter(url, "_where", whereCondition);
             }
 

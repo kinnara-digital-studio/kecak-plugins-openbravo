@@ -1,4 +1,4 @@
-package com.kinnara.kecakplugins.openbravo;
+package com.kinnara.kecakplugins.openbravo.datalist;
 
 import com.kinnara.kecakplugins.openbravo.commons.RestMixin;
 import com.kinnara.kecakplugins.openbravo.exceptions.OpenbravoClientException;

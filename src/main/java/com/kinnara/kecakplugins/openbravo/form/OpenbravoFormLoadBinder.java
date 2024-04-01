@@ -1,4 +1,4 @@
-package com.kinnara.kecakplugins.openbravo;
+package com.kinnara.kecakplugins.openbravo.form;
 
 import com.kinnara.kecakplugins.openbravo.commons.RestMixin;
 import com.kinnara.kecakplugins.openbravo.exceptions.OpenbravoClientException;
@@ -13,7 +13,6 @@ import org.joget.apps.form.service.FormUtil;
 import org.joget.commons.util.LogUtil;
 import org.joget.plugin.base.PluginManager;
 import org.joget.workflow.model.WorkflowAssignment;
-import org.joget.workflow.model.WorkflowProcessLink;
 import org.joget.workflow.model.service.WorkflowManager;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -29,7 +28,7 @@ import java.util.stream.Collectors;
  *
  *
  */
-public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBinder, FormStoreElementBinder, RestMixin {
+public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadElementBinder, RestMixin {
     @Override
     public FormRowSet load(Element element, String primaryKey, FormData formData) {
         final WorkflowManager workflowManager = (WorkflowManager) AppUtil.getApplicationContext().getBean("workflowManager");
@@ -76,58 +75,6 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
             LogUtil.error(getClassName(), e, e.getMessage());
             return null;
         }
-    }
-
-    @Override
-    public FormRowSet store(Element element, FormRowSet rowSet, FormData formData) {
-        final WorkflowManager workflowManager = (WorkflowManager) AppUtil.getApplicationContext().getBean("workflowManager");
-        final WorkflowAssignment workflowAssignment = Optional.of(formData)
-                .map(FormData::getActivityId)
-                .map(workflowManager::getAssignment)
-                .orElse(null);
-
-        final Form form = FormUtil.findRootForm(element);
-        final String url = getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity(form));
-        final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
-        final FormRow row = rowSet.get(0);
-        if(!isNewRecord(formData)) {
-            final String primaryKey = Optional.of(formData)
-                    .map(FormData::getProcessId)
-                    .map(workflowManager::getWorkflowProcessLink)
-                    .map(WorkflowProcessLink::getOriginProcessId)
-                    .orElse(formData.getPrimaryKeyValue().replaceAll("-", ""));
-            row.setId(primaryKey);
-        }
-
-        try {
-            final HttpUriRequest request = getHttpRequest(workflowAssignment, url, "PUT", headers, row);
-            final HttpClient client = getHttpClient(isIgnoreCertificateError());
-            final HttpResponse response = client.execute(request);
-
-            final int statusCode = getResponseStatus(response);
-            if (getStatusGroupCode(statusCode) != 200) {
-                throw new OpenbravoClientException("Response code [" + statusCode + "] is not 200 (Success)");
-            } else if (statusCode != 200) {
-                LogUtil.warn(getClassName(), "Response code [" + statusCode + "] is considered as success");
-            }
-
-            if (!isJsonResponse(response)) {
-                throw new OpenbravoClientException("Content type is not JSON");
-            }
-
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                final JSONObject jsonResponseBody = new JSONObject(br.lines().collect(Collectors.joining())).getJSONObject("response");
-                final int status = jsonResponseBody.getInt("status");
-                if (status != 0) {
-                    throw new OpenbravoClientException(jsonResponseBody.getJSONObject("error").getString("message"));
-                }
-            }
-        } catch (OpenbravoClientException | IOException | JSONException e) {
-            LogUtil.error(getClassName(), e, e.getMessage());
-            formData.addFormError("", e.getMessage());
-        }
-
-        return rowSet;
     }
 
     @Override
