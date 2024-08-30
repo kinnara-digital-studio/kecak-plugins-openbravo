@@ -15,9 +15,6 @@ public abstract class DefaultXmlSaxHandler extends DefaultHandler {
 	
 	/**
 	 * @param recordPattern
-	 * @param valuePattern
-	 * @param labelPattern
-	 * @param rowSet : output parameter, the record set being built
 	 */
 	public DefaultXmlSaxHandler(Pattern recordPattern) {
 		this.recordPattern = recordPattern;
