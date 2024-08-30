@@ -1,4 +1,4 @@
-package com.kinnara.kecakplugins.openbravo.commons;
+package com.kinnarastudio.kecakplugins.openbravo.commons;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;

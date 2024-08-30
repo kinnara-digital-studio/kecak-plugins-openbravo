@@ -1,4 +1,4 @@
-package com.kinnara.kecakplugins.openbravo.commons;
+package com.kinnarastudio.kecakplugins.openbravo.commons;
 
 import java.util.regex.Pattern;
 

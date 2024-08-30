@@ -1,11 +1,10 @@
-package com.kinnara.kecakplugins.openbravo.datalist;
+package com.kinnarastudio.kecakplugins.openbravo.datalist;
 
-import com.kinnara.kecakplugins.openbravo.commons.RestMixin;
-import com.kinnara.kecakplugins.openbravo.exceptions.OpenbravoClientException;
+import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
+import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.displaytag.util.LookupUtil;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.model.DataList;
 import org.joget.apps.datalist.model.DataListActionDefault;
@@ -22,7 +21,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
 

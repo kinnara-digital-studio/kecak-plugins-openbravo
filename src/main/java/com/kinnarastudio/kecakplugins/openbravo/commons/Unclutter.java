@@ -1,4 +1,4 @@
-package com.kinnara.kecakplugins.openbravo.commons;
+package com.kinnarastudio.kecakplugins.openbravo.commons;
 
 import org.joget.apps.form.model.Element;
 import org.joget.apps.form.model.FormData;

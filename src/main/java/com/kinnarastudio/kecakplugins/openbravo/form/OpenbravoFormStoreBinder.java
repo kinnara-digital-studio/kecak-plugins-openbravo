@@ -1,7 +1,7 @@
-package com.kinnara.kecakplugins.openbravo.form;
+package com.kinnarastudio.kecakplugins.openbravo.form;
 
-import com.kinnara.kecakplugins.openbravo.commons.RestMixin;
-import com.kinnara.kecakplugins.openbravo.exceptions.OpenbravoClientException;
+import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
+import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.commons.Try;
 import com.kinnarastudio.commons.jsonstream.JSONStream;
 import org.apache.http.HttpResponse;
@@ -13,6 +13,7 @@ import org.joget.apps.form.service.FormUtil;
 import org.joget.commons.util.LogUtil;
 import org.joget.plugin.base.PluginManager;
 import org.joget.workflow.model.WorkflowAssignment;
+import org.joget.workflow.model.WorkflowProcessLink;
 import org.joget.workflow.model.service.WorkflowManager;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -28,9 +29,10 @@ import java.util.stream.Collectors;
  *
  *
  */
-public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadElementBinder, RestMixin {
+public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreElementBinder, RestMixin {
+
     @Override
-    public FormRowSet load(Element element, String primaryKey, FormData formData) {
+    public FormRowSet store(Element element, FormRowSet rowSet, FormData formData) {
         final WorkflowManager workflowManager = (WorkflowManager) AppUtil.getApplicationContext().getBean("workflowManager");
         final WorkflowAssignment workflowAssignment = Optional.of(formData)
                 .map(FormData::getActivityId)
@@ -38,26 +40,28 @@ public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadEleme
                 .orElse(null);
 
         final Form form = FormUtil.findRootForm(element);
-        final StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity(form), primaryKey));
-        if(getPropertyNoFilterActive()) {
-            addUrlParameter(url, "_noActiveFilter", "true");
+        final String url = getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity(form));
+        final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
+        final FormRow row = rowSet.get(0);
+        if(!isNewRecord(formData)) {
+            final String primaryKey = Optional.of(formData)
+                    .map(FormData::getProcessId)
+                    .map(workflowManager::getWorkflowProcessLink)
+                    .map(WorkflowProcessLink::getOriginProcessId)
+                    .orElse(formData.getPrimaryKeyValue().replaceAll("-", ""));
+            row.setId(primaryKey);
         }
 
-        final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
-
         try {
-            final HttpUriRequest request = getHttpRequest(workflowAssignment, url.toString(), "GET", headers);
+            final HttpUriRequest request = getHttpRequest(workflowAssignment, url, "PUT", headers, row);
             final HttpClient client = getHttpClient(isIgnoreCertificateError());
             final HttpResponse response = client.execute(request);
 
             final int statusCode = getResponseStatus(response);
-            if(statusCode == 404) {
-                LogUtil.debug(getClassName(), "ID [" + primaryKey + "] : No record");
-                return null;
-            } else if (getStatusGroupCode(statusCode) != 200) {
-                throw new OpenbravoClientException("ID [" + primaryKey + "] : Response code [" + statusCode + "] is not 200 (Success)");
+            if (getStatusGroupCode(statusCode) != 200) {
+                throw new OpenbravoClientException("Response code [" + statusCode + "] is not 200 (Success)");
             } else if (statusCode != 200) {
-                LogUtil.warn(getClassName(), "ID [" + primaryKey + "] : Response code [" + statusCode + "] is considered as success");
+                LogUtil.warn(getClassName(), "Response code [" + statusCode + "] is considered as success");
             }
 
             if (!isJsonResponse(response)) {
@@ -65,16 +69,18 @@ public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadEleme
             }
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                final JSONObject jsonResponseBody = new JSONObject(br.lines().collect(Collectors.joining()));
-                final FormRowSet rowSet = new FormRowSet();
-                final FormRow row = convertJson(jsonResponseBody);
-                rowSet.add(row);
-                return rowSet;
+                final JSONObject jsonResponseBody = new JSONObject(br.lines().collect(Collectors.joining())).getJSONObject("response");
+                final int status = jsonResponseBody.getInt("status");
+                if (status != 0) {
+                    throw new OpenbravoClientException(jsonResponseBody.getJSONObject("error").getString("message"));
+                }
             }
         } catch (OpenbravoClientException | IOException | JSONException e) {
             LogUtil.error(getClassName(), e, e.getMessage());
-            return null;
+            formData.addFormError("", e.getMessage());
         }
+
+        return rowSet;
     }
 
     @Override

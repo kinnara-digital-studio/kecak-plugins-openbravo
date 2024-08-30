@@ -1,4 +1,4 @@
-package com.kinnara.kecakplugins.openbravo.exceptions;
+package com.kinnarastudio.kecakplugins.openbravo.exceptions;
 
 /**
  * @author aristo

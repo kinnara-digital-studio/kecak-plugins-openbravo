@@ -1,11 +1,11 @@
-package com.kinnara.kecakplugins.openbravo.commons;
+package com.kinnarastudio.kecakplugins.openbravo.commons;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
-import com.kinnara.kecakplugins.openbravo.exceptions.OpenbravoClientException;
+import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.commons.jsonstream.JSONCollectors;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;

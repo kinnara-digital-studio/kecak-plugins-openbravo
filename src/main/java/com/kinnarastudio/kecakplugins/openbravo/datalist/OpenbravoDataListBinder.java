@@ -1,7 +1,7 @@
-package com.kinnara.kecakplugins.openbravo.datalist;
+package com.kinnarastudio.kecakplugins.openbravo.datalist;
 
-import com.kinnara.kecakplugins.openbravo.commons.RestMixin;
-import com.kinnara.kecakplugins.openbravo.exceptions.OpenbravoClientException;
+import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
+import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.commons.Try;
 import com.kinnarastudio.commons.jsonstream.JSONStream;
 import org.apache.http.HttpResponse;
