@@ -1,0 +1,51 @@
+[
+    {
+        "title": "@@openbravo.openbravoFormBinder@@",
+        "properties": [
+            {
+                "name": "baseUrl",
+                "label": "Base URL",
+                "type": "textfield",
+                "required": "true"
+            },
+            {
+                "label": "Authentication",
+                "type": "header"
+            },
+            {
+                "name": "username",
+                "label": "@@openbravo.username@@",
+                "type": "textfield",
+                "required": "true"
+            },
+            {
+                "name": "password",
+                "label": "@@openbravo.password@@",
+                "type": "password",
+                "required": "true"
+            },
+            {
+                "label": "Table Input",
+                "type": "header"
+            },
+            {
+                "name": "tableEntity",
+                "label": "Table Entity",
+                "type": "textfield",
+                "required": "true"
+            },
+            {
+                "name": "valueColumn",
+                "label": "Insert Column Name for Value",
+                "type": "textfield",
+                "required": "true"
+            },
+            {
+                "name": "labelColumn",
+                "label": "Insert Column for Label",
+                "type": "textfield",
+                "required": "true"
+            }
+        ]
+    }
+]

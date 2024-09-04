@@ -38,7 +38,8 @@ public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadEleme
                 .orElse(null);
 
         final Form form = FormUtil.findRootForm(element);
-        final StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity(form), primaryKey));
+        String tableEntity = getPropertyString("tableEntity");
+        final StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), tableEntity, primaryKey));
         if(getPropertyNoFilterActive()) {
             addUrlParameter(url, "_noActiveFilter", "true");
         }
@@ -66,6 +67,7 @@ public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadEleme
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
                 final JSONObject jsonResponseBody = new JSONObject(br.lines().collect(Collectors.joining()));
+                LogUtil.info(getClassName(), "JSON Response Body Load Binder: " + jsonResponseBody.toString());
                 final FormRowSet rowSet = new FormRowSet();
                 final FormRow row = convertJson(jsonResponseBody);
                 rowSet.add(row);
@@ -79,7 +81,7 @@ public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadEleme
 
     @Override
     public String getName() {
-        return "Openbravo Form Binder";
+        return "Openbravo Form Load Binder";
     }
 
     @Override
@@ -97,7 +99,7 @@ public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadEleme
 
     @Override
     public String getLabel() {
-        return "Openbravo Form Binder";
+        return "Openbravo Form Load Binder";
     }
 
     @Override

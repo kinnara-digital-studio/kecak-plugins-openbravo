@@ -21,6 +21,11 @@
         "name": "password",
         "label": "@@openbravo.password@@",
         "type": "password"
+      },
+      {
+        "name": "tableEntity",
+        "label": "Table Entity",
+        "type": "textfield"
       }
     ]
   },

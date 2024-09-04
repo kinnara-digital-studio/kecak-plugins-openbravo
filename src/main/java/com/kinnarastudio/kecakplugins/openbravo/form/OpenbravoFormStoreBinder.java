@@ -40,7 +40,8 @@ public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreEle
                 .orElse(null);
 
         final Form form = FormUtil.findRootForm(element);
-        final String url = getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity(form));
+        String tableEntity = getPropertyString("tableEntity");
+        final String url = getApiEndPoint(getPropertyBaseUrl(), tableEntity);
         final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
         final FormRow row = rowSet.get(0);
         if(!isNewRecord(formData)) {
@@ -53,7 +54,7 @@ public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreEle
         }
 
         try {
-            final HttpUriRequest request = getHttpRequest(workflowAssignment, url, "PUT", headers, row);
+            final HttpUriRequest request = getHttpRequest(workflowAssignment, url, "POST", headers, row);
             final HttpClient client = getHttpClient(isIgnoreCertificateError());
             final HttpResponse response = client.execute(request);
 
@@ -70,9 +71,10 @@ public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreEle
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
                 final JSONObject jsonResponseBody = new JSONObject(br.lines().collect(Collectors.joining())).getJSONObject("response");
+                LogUtil.info(getClassName(), "JSON Response Body Store Binder: " + jsonResponseBody.toString());
                 final int status = jsonResponseBody.getInt("status");
                 if (status != 0) {
-                    throw new OpenbravoClientException(jsonResponseBody.getJSONObject("error").getString("message"));
+                    throw new OpenbravoClientException(jsonResponseBody.getJSONObject("response").getJSONObject("error").getString("message"));
                 }
             }
         } catch (OpenbravoClientException | IOException | JSONException e) {
@@ -85,7 +87,7 @@ public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreEle
 
     @Override
     public String getName() {
-        return "Openbravo Form Binder";
+        return "Openbravo Form Store Binder";
     }
 
     @Override
@@ -103,7 +105,7 @@ public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreEle
 
     @Override
     public String getLabel() {
-        return "Openbravo Form Binder";
+        return "Openbravo Form Store Binder";
     }
 
     @Override
