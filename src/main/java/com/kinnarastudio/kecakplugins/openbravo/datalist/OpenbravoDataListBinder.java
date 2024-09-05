@@ -54,7 +54,11 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
     @Override
     public DataListCollection<Map<String, String>> getData(@Nullable DataList dataList, @Nullable Map properties, @Nullable DataListFilterQueryObject[] filterQueryObjects, String sort, @Nullable Boolean desc, @Nullable Integer start, @Nullable Integer rows) {
         try {
-            final StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity()));
+            StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity()));
+
+            if (!getPropertyString("sortBy").isEmpty()) {
+                addUrlParameter(url, "_sortBy", getPropertyString("sortBy"));
+            }
 
             if (getPropertyNoFilterActive()) {
                 addUrlParameter(url, "_noActiveFilter", "true");
@@ -83,6 +87,8 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
             // kirim request ke server
             final HttpClient client = getHttpClient(isIgnoreCertificateError());
             final HttpResponse response = client.execute(request);
+
+            LogUtil.info(getClassName(), "DataList Binder Request: " + request.toString());
 
             final int statusCode = getResponseStatus(response);
             if (getStatusGroupCode(statusCode) != 200) {

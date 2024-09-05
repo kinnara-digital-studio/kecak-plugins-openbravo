@@ -3,6 +3,10 @@
     "title" :  "Openbravo DataList Binder",
     "properties": [
       {
+        "label": "Table Property",
+        "type": "header"
+      },
+      {
         "name": "baseUrl",
         "label": "Base URL",
         "type": "textfield",
@@ -13,6 +17,11 @@
         "label": "Table Entity Name",
         "type": "textfield",
         "required": "true"
+      },
+      {
+        "name": "sortBy",
+        "label": "Sort By (Column Name)",
+        "type": "textfield"
       },
       {
         "label": "Authentication",
