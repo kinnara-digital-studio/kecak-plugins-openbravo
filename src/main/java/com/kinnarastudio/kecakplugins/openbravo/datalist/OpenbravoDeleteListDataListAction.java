@@ -42,7 +42,7 @@ public class OpenbravoDeleteListDataListAction extends DataListActionDefault imp
 
     @Override
     public String getPropertyOptions() {
-        return AppUtil.readPluginResource(getClassName(), "/properties/datalist/OpenbravoDeleteListDataListAction.json", null, false, "/messages/Openbravo");
+        return AppUtil.readPluginResource(getClassName(), "/properties/OpenbravoDeleteListDataListAction.json", null, false, "/messages/Openbravo");
     }
 
     @Override
@@ -94,6 +94,7 @@ public class OpenbravoDeleteListDataListAction extends DataListActionDefault imp
 
                     try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
                         final JSONObject jsonResponseBody = new JSONObject(br.lines().collect(Collectors.joining())).getJSONObject("response");
+                        LogUtil.info(getClassName(), "JSON Response Body Delete: " + jsonResponseBody.toString());
                         final int status = jsonResponseBody.getInt("status");
                         if (status != 0) {
                             throw new OpenbravoClientException(jsonResponseBody.getJSONObject("error").getString("message"));
@@ -108,7 +109,6 @@ public class OpenbravoDeleteListDataListAction extends DataListActionDefault imp
                 }
             }
         }
-
         return result;
     }
 
