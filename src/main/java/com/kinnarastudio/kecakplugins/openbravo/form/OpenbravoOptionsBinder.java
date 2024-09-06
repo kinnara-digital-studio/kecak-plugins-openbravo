@@ -17,6 +17,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.model.DataListCollection;
 import org.joget.apps.form.model.Element;
+import org.joget.apps.form.model.FormAjaxOptionsBinder;
 import org.joget.apps.form.model.FormBinder;
 import org.joget.apps.form.model.FormData;
 import org.joget.apps.form.model.FormLoadOptionsBinder;
@@ -30,13 +31,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import javax.annotation.Nullable;
 import com.kinnarastudio.commons.Try;
 import com.kinnarastudio.commons.jsonstream.JSONStream;
 import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 
-public class OpenbravoOptionsBinder extends FormBinder implements FormLoadOptionsBinder, RestMixin{
-    final public static String LABEL = "Open Bravo Options Binder";
+public class OpenbravoOptionsBinder extends FormBinder implements FormLoadOptionsBinder, RestMixin, FormAjaxOptionsBinder{
+    final public static String LABEL = "Openbravo Options Binder";
 
     @Override
     public FormRowSet load(Element element, String primaryKey, FormData formData) {
@@ -53,22 +55,23 @@ public class OpenbravoOptionsBinder extends FormBinder implements FormLoadOption
 
             final HttpUriRequest request = getHttpRequest(workflowAssignment, url.toString(), "GET", headers);
             final HttpClient client = getHttpClient(isIgnoreCertificateError());
-
+            LogUtil.info(getClassName(), "Request Option Binder: " + request.toString());
             final HttpResponse response = client.execute(request);
 
-            final int statusCode = getResponseStatus(response);
-            if(statusCode == 404) {
-                LogUtil.debug(getClassName(), "ID [" + primaryKey + "] : No record");
-                return null;
-            } else if (getStatusGroupCode(statusCode) != 200) {
-                throw new OpenbravoClientException("ID [" + primaryKey + "] : Response code [" + statusCode + "] is not 200 (Success)");
-            } else if (statusCode != 200) {
-                LogUtil.warn(getClassName(), "ID [" + primaryKey + "] : Response code [" + statusCode + "] is considered as success");
-            }
+            LogUtil.info(getClassName(), "Response Option Binder: " + response.toString());
+            // final int statusCode = getResponseStatus(response);
+            // if(statusCode == 404) {
+            //     LogUtil.debug(getClassName(), "ID [" + primaryKey + "] : No record");
+            //     return null;
+            // } else if (getStatusGroupCode(statusCode) != 200) {
+            //     throw new OpenbravoClientException("ID [" + primaryKey + "] : Response code [" + statusCode + "] is not 200 (Success)");
+            // } else if (statusCode != 200) {
+            //     LogUtil.warn(getClassName(), "ID [" + primaryKey + "] : Response code [" + statusCode + "] is considered as success");
+            // }
 
-            if (!isJsonResponse(response)) {
-                throw new OpenbravoClientException("Content type is not JSON");
-            }
+            // if (!isJsonResponse(response)) {
+            //     throw new OpenbravoClientException("Content type is not JSON");
+            // }
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
                 final JSONObject jsonResponseObject = new JSONObject(br.lines().collect(Collectors.joining()));
@@ -155,5 +158,15 @@ public class OpenbravoOptionsBinder extends FormBinder implements FormLoadOption
         ResourceBundle resourceBundle = pluginManager.getPluginMessageBundle(getClassName(), "/messages/BuildNumber");
         String buildNumber = resourceBundle.getString("buildNumber");
         return buildNumber;
+    }
+
+    @Override
+    public FormRowSet loadAjaxOptions(@Nullable String[] depedencyVal) {
+        return load(null, null, new FormData());
+    }
+
+    @Override
+    public boolean useAjax() {
+        return true;
     }
 }

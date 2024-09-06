@@ -81,6 +81,8 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
                 addUrlParameter(url, "_where", whereCondition);
             }
 
+            LogUtil.info(getClassName(), "Where Condition: " + whereCondition);
+
             final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
             final HttpUriRequest request = getHttpRequest(url.toString(), "GET", headers);
 
