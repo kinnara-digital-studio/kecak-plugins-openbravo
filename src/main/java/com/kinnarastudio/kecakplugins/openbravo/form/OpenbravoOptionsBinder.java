@@ -44,7 +44,7 @@ public class OpenbravoOptionsBinder extends FormBinder implements FormLoadOption
     public FormRowSet load(Element element, String primaryKey, FormData formData) {
         WorkflowManager workflowManager = (WorkflowManager) AppUtil.getApplicationContext().getBean("workflowManager");
 
-        final WorkflowAssignment workflowAssignment = Optional.of(formData)
+        final WorkflowAssignment workflowAssignment = Optional.ofNullable(formData)
                 .map(FormData::getActivityId)
                 .map(workflowManager::getAssignment)
                 .orElse(null);
@@ -162,7 +162,7 @@ public class OpenbravoOptionsBinder extends FormBinder implements FormLoadOption
 
     @Override
     public FormRowSet loadAjaxOptions(@Nullable String[] depedencyVal) {
-        return load(null, null, new FormData());
+        return load(null, null, null);
     }
 
     @Override

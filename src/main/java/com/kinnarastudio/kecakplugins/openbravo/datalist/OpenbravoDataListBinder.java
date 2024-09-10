@@ -81,8 +81,6 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
                 addUrlParameter(url, "_where", whereCondition);
             }
 
-            LogUtil.info(getClassName(), "Where Condition: " + whereCondition);
-
             final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
             final HttpUriRequest request = getHttpRequest(url.toString(), "GET", headers);
 
@@ -243,7 +241,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
                 .orElseGet(Stream::empty)
                 .map(filterQueryObject -> {
                     final String operator = ifEmptyThen(filterQueryObject.getOperator(), "AND");
-                    final String query = filterQueryObject.getQuery();
+                    final String query = filterQueryObject.getQuery().replaceAll("\\$_identifier","\\.name");
                     final String[] values = filterQueryObject.getValues();
 
                     final StringBuffer sb = new StringBuffer();
