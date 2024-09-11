@@ -77,7 +77,7 @@ public class OpenbravoDeleteListDataListAction extends DataListActionDefault imp
                         row.setProperty("active", String.valueOf("activate".equalsIgnoreCase(getPropertyActivationMode())));
                     }
 
-                    final HttpUriRequest request = getHttpRequest(null, url.toString(), "PUT", headers, row);
+                    final HttpUriRequest request = getHttpRequest(null, url.toString(), "DELETE", headers, row);
                     final HttpClient client = getHttpClient(isIgnoreCertificateError());
                     final HttpResponse response = client.execute(request);
 
