@@ -45,6 +45,15 @@
                 "label": "Insert Column for Label",
                 "type": "textfield",
                 "required": "true"
+            },
+            {
+                "label": "Conditions",
+                "type": "header"
+            },
+            {
+                "name": "whereCondition",
+                "label": "Where Condition",
+                "type": "textarea"
             }
         ]
     }
