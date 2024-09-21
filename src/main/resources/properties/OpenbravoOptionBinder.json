@@ -51,8 +51,8 @@
                 "type": "header"
             },
             {
-                "name": "whereCondition",
-                "label": "Where Condition",
+                "name": "customWhereCondition",
+                "label": "Custom Where Condition",
                 "type": "textarea"
             }
         ]

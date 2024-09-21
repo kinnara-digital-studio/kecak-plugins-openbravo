@@ -1,9 +1,9 @@
 package com.kinnarastudio.kecakplugins.openbravo.form;
 
-import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.commons.Try;
 import com.kinnarastudio.commons.jsonstream.JSONStream;
+import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
+import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -26,8 +26,6 @@ import java.util.stream.Collectors;
 
 /**
  * Openbravo Form Binder
- *
- *
  */
 public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreElementBinder, RestMixin {
 
@@ -44,7 +42,7 @@ public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreEle
         final String url = getApiEndPoint(getPropertyBaseUrl(), tableEntity);
         final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
         final FormRow row = rowSet.get(0);
-        if(!isNewRecord(formData)) {
+        if (!isNewRecord(formData)) {
             final String primaryKey = Optional.of(formData)
                     .map(FormData::getProcessId)
                     .map(workflowManager::getWorkflowProcessLink)
@@ -60,7 +58,7 @@ public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreEle
 
             final int statusCode = getResponseStatus(response);
             if (getStatusGroupCode(statusCode) != 200) {
-                throw new OpenbravoClientException("Response code [" + statusCode + "] is not 200 (Success)");
+                throw new OpenbravoClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
             } else if (statusCode != 200) {
                 LogUtil.warn(getClassName(), "Response code [" + statusCode + "] is considered as success");
             }

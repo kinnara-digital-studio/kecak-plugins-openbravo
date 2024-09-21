@@ -1,9 +1,9 @@
 package com.kinnarastudio.kecakplugins.openbravo.datalist;
 
-import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.commons.Try;
 import com.kinnarastudio.commons.jsonstream.JSONStream;
+import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
+import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -30,15 +30,17 @@ import java.util.stream.Stream;
  * Openbravo DataList Binder
  */
 public class OpenbravoDataListBinder extends DataListBinderDefault implements RestMixin {
+    private int dataTotalRowCount = -1;
+
     @Override
     public DataListColumn[] getColumns() {
         return Optional.ofNullable(getData(null, null, null, null, null, null, 1))
-                .map(Collection::stream)
-                .orElseGet(Stream::empty)
+                .stream()
+                .flatMap(Collection::stream)
                 .findFirst()
                 .map(Map::keySet)
-                .map(Collection::stream)
-                .orElseGet(Stream::empty)
+                .stream()
+                .flatMap(Collection::stream)
                 .map(s -> new DataListColumn() {{
                     setName(s);
                     setLabel(s);
@@ -76,11 +78,15 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
                 addUrlParameter(url, "_endRow", String.valueOf((start == null ? 0 : start) + rows));
             }
 
-            final String whereCondition = getWhereCondition(filterQueryObjects);
-            if (!whereCondition.isEmpty()) {
-                addUrlParameter(url, "_where", whereCondition);
+            final String filterWhereCondition = getFilterWhereCondition(filterQueryObjects);
+            final String customWhereCondition = getCustomWhereCondition();
+            final String whereCondition;
+            if (customWhereCondition.isEmpty()) {
+                whereCondition = filterWhereCondition;
+            } else {
+                whereCondition = String.format("(%s) AND (%s)", filterWhereCondition, customWhereCondition);
             }
-
+            addUrlParameter(url, "_where", URLEncoder.encode(whereCondition));
             final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
             final HttpUriRequest request = getHttpRequest(url.toString(), "GET", headers);
 
@@ -88,11 +94,9 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
             final HttpClient client = getHttpClient(isIgnoreCertificateError());
             final HttpResponse response = client.execute(request);
 
-            LogUtil.info(getClassName(), "DataList Binder Request: " + request.toString());
-
             final int statusCode = getResponseStatus(response);
             if (getStatusGroupCode(statusCode) != 200) {
-                throw new OpenbravoClientException("Response code [" + statusCode + "] is not 200 (Success)");
+                throw new OpenbravoClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
             } else if (statusCode != 200) {
                 LogUtil.warn(getClassName(), "Response code [" + statusCode + "] is considered as success");
             }
@@ -102,7 +106,8 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
             }
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                final JSONObject jsonResponseBody = new JSONObject(br.lines().collect(Collectors.joining()));
+                final String responseBody = br.lines().collect(Collectors.joining());
+                final JSONObject jsonResponseBody = new JSONObject(responseBody);
 
                 return Optional.of(jsonResponseBody)
                         .map(Try.onFunction(j -> j.getJSONObject("response")))
@@ -120,23 +125,37 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
 
     @Override
     public int getDataTotalRowCount(DataList dataList, Map map, DataListFilterQueryObject[] filterQueryObjects) {
+        if (dataTotalRowCount > 0) {
+            LogUtil.info(getClassName(), "dataTotalRowCount [" + dataTotalRowCount + "]");
+            return dataTotalRowCount;
+        }
+
         try {
             final StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity()));
 
             addUrlParameter(url, "_selectedProperties", "id");
 
-            addUrlParameter(url, "_endRow", getPropertyFetchLimit());
+            final int fetchLimit = getPropertyFetchLimit();
+            if (fetchLimit > 0) {
+                addUrlParameter(url, "_endRow", String.valueOf(fetchLimit));
+            }
 
             if (getPropertyNoFilterActive()) {
                 addUrlParameter(url, "_noActiveFilter", "true");
             }
 
-            final String whereCondition = getWhereCondition(filterQueryObjects);
-            if (!whereCondition.isEmpty()) {
-                addUrlParameter(url, "_where", whereCondition);
+            final String filterWhereCondition = getFilterWhereCondition(filterQueryObjects);
+            final String customWhereCondition = getCustomWhereCondition();
+            final String whereCondition;
+            if (customWhereCondition.isEmpty()) {
+                whereCondition = filterWhereCondition;
+            } else {
+                whereCondition = String.format("(%s) AND (%s)", filterWhereCondition, customWhereCondition);
             }
+            addUrlParameter(url, "_where", URLEncoder.encode(whereCondition));
 
             final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
+            LogUtil.info(getClassName(), "getDataTotalRowCount url [" + url + "]");
             final HttpUriRequest request = getHttpRequest(url.toString(), "GET", headers);
 
             // kirim request ke server
@@ -145,7 +164,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
 
             final int statusCode = getResponseStatus(response);
             if (getStatusGroupCode(statusCode) != 200) {
-                throw new OpenbravoClientException("Response code [" + statusCode + "] is not 200 (Success)");
+                throw new OpenbravoClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
             } else if (statusCode != 200) {
                 LogUtil.warn(getClassName(), "Response code [" + statusCode + "] is considered as success");
             }
@@ -155,8 +174,10 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
             }
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                final JSONObject jsonResponseBody = new JSONObject(br.lines().collect(Collectors.joining()));
-                return jsonResponseBody.getJSONObject("response").getInt("totalRows");
+                final String responseBody = br.lines().collect(Collectors.joining());
+                final JSONObject jsonResponseBody = new JSONObject(responseBody);
+                String totalRows = jsonResponseBody.getJSONObject("response").getString("totalRows");
+                return Integer.parseInt(totalRows);
             }
         } catch (IOException | OpenbravoClientException | JSONException e) {
             LogUtil.error(getClassName(), e, e.getMessage());
@@ -230,34 +251,38 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         return "true".equalsIgnoreCase(getPropertyString("noFilterActive"));
     }
 
-    protected String getPropertyFetchLimit() {
-        return getPropertyString("fetchLimit");
+    protected int getPropertyFetchLimit() {
+        return Integer.parseInt(getPropertyString("fetchLimit"));
     }
 
-    protected String getWhereCondition(DataListFilterQueryObject[] filterQueryObjects) {
+    protected String getFilterWhereCondition(DataListFilterQueryObject[] filterQueryObjects) {
         final Pattern p = Pattern.compile("\\?");
         String whereCondition = Optional.ofNullable(filterQueryObjects)
                 .map(Arrays::stream)
                 .orElseGet(Stream::empty)
                 .map(filterQueryObject -> {
                     final String operator = ifEmptyThen(filterQueryObject.getOperator(), "AND");
-                    final String query = filterQueryObject.getQuery().replaceAll("\\$_identifier","\\.name");
+                    final String query = filterQueryObject.getQuery().replaceAll("\\$_identifier", "\\.name");
                     final String[] values = filterQueryObject.getValues();
 
-                    final StringBuffer sb = new StringBuffer();
+                    final StringBuilder condition = new StringBuilder();
                     final Matcher m = p.matcher(query);
                     int i = 0;
                     while (m.find()) {
                         if (i < values.length) {
-                            m.appendReplacement(sb, "'" + values[i] + "'");
+                            m.appendReplacement(condition, "'" + values[i] + "'");
                         }
                         i++;
                     }
-                    m.appendTail(sb);
+                    m.appendTail(condition);
 
-                    return operator + " " + sb;
+                    return operator + " " + condition;
                 })
                 .collect(Collectors.joining(" ", "1=1 ", ""));
-        return URLEncoder.encode(whereCondition);
+        return whereCondition;
+    }
+
+    protected String getCustomWhereCondition() {
+        return getPropertyString("customWhereCondition");
     }
 }

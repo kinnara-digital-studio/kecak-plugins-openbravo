@@ -159,6 +159,6 @@ public class OpenbravoOptionsBinder extends FormBinder implements FormLoadOption
     }
 
     protected String getWhereCondition() {
-        return getPropertyString("whereCondition");
+        return getPropertyString("customWhereCondition");
     }
 }

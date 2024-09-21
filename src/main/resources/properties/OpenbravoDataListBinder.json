@@ -48,6 +48,15 @@
             "label": ""
           }
         ]
+      },
+      {
+        "label": "Conditions",
+        "type": "header"
+      },
+      {
+        "name": "customWhereCondition",
+        "label": "Custom Where Condition",
+        "type": "textarea"
       }
     ]
   },

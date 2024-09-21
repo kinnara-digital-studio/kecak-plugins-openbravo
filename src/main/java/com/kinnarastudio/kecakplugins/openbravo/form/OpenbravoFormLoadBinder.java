@@ -1,9 +1,9 @@
 package com.kinnarastudio.kecakplugins.openbravo.form;
 
-import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.commons.Try;
 import com.kinnarastudio.commons.jsonstream.JSONStream;
+import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
+import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 
 /**
  * Openbravo Form Binder
- *
- *
  */
 public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadElementBinder, RestMixin {
     @Override
@@ -40,7 +38,7 @@ public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadEleme
         final Form form = FormUtil.findRootForm(element);
         String tableEntity = getPropertyString("tableEntity");
         final StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), tableEntity, primaryKey));
-        if(getPropertyNoFilterActive()) {
+        if (getPropertyNoFilterActive()) {
             addUrlParameter(url, "_noActiveFilter", "true");
         }
 
@@ -52,11 +50,11 @@ public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadEleme
             final HttpResponse response = client.execute(request);
 
             final int statusCode = getResponseStatus(response);
-            if(statusCode == 404) {
+            if (statusCode == 404) {
                 LogUtil.debug(getClassName(), "ID [" + primaryKey + "] : No record");
                 return null;
             } else if (getStatusGroupCode(statusCode) != 200) {
-                throw new OpenbravoClientException("ID [" + primaryKey + "] : Response code [" + statusCode + "] is not 200 (Success)");
+                throw new OpenbravoClientException("ID [" + primaryKey + "] : Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
             } else if (statusCode != 200) {
                 LogUtil.warn(getClassName(), "ID [" + primaryKey + "] : Response code [" + statusCode + "] is considered as success");
             }
