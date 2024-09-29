@@ -30,8 +30,6 @@ import java.util.stream.Stream;
  * Openbravo DataList Binder
  */
 public class OpenbravoDataListBinder extends DataListBinderDefault implements RestMixin {
-    private int dataTotalRowCount = -1;
-
     @Override
     public DataListColumn[] getColumns() {
         return Optional.ofNullable(getData(null, null, null, null, null, null, 1))
@@ -125,15 +123,10 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
 
     @Override
     public int getDataTotalRowCount(DataList dataList, Map map, DataListFilterQueryObject[] filterQueryObjects) {
-        if (dataTotalRowCount > 0) {
-            LogUtil.info(getClassName(), "dataTotalRowCount [" + dataTotalRowCount + "]");
-            return dataTotalRowCount;
-        }
-
         try {
-            final StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity()));
-
-            addUrlParameter(url, "_selectedProperties", "id");
+            final StringBuilder url = new StringBuilder(getCountApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity()));
+            LogUtil.info(getClassName(), "new get total row count");
+//            addUrlParameter(url, "_selectedProperties", "id");
 
             final int fetchLimit = getPropertyFetchLimit();
             if (fetchLimit > 0) {
@@ -176,8 +169,8 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
                 final String responseBody = br.lines().collect(Collectors.joining());
                 final JSONObject jsonResponseBody = new JSONObject(responseBody);
-                String totalRows = jsonResponseBody.getJSONObject("response").getString("totalRows");
-                return Integer.parseInt(totalRows);
+                int totalRows = jsonResponseBody.getJSONObject("response").getInt("count");
+                return totalRows;
             }
         } catch (IOException | OpenbravoClientException | JSONException e) {
             LogUtil.error(getClassName(), e, e.getMessage());
@@ -240,6 +233,10 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
 
     protected String getApiEndPoint(String baseUrl, String tableEntity) {
         return baseUrl + "/org.openbravo.service.json.jsonrest/" + tableEntity;
+    }
+
+    protected String getCountApiEndPoint(String baseUrl, String tableEntity) {
+        return baseUrl + "/ws/com.kinnarastudio.openbravo.kecakadapter.RecordCount/" + tableEntity;
     }
 
     protected Map<String, String> convertJson(JSONObject json) {
