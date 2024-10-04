@@ -10,6 +10,7 @@ import com.kinnarastudio.kecakplugins.openbravo.form.OpenbravoFormLoadBinder;
 import com.kinnarastudio.kecakplugins.openbravo.form.OpenbravoFormStoreBinder;
 import com.kinnarastudio.kecakplugins.openbravo.form.OpenbravoOptionsBinder;
 
+import com.kinnarastudio.kecakplugins.openbravo.webservice.OpenbravoProductPhotoWebService;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -28,6 +29,7 @@ public class Activator implements BundleActivator {
         registrationList.add(context.registerService(OpenbravoRecordActivationDataListAction.class.getName(), new OpenbravoRecordActivationDataListAction(), null));
         registrationList.add(context.registerService(OpenbravoOptionsBinder.class.getName(), new OpenbravoOptionsBinder(), null));
         registrationList.add(context.registerService(OpenbravoDeleteListDataListAction.class.getName(), new OpenbravoDeleteListDataListAction(), null));
+        registrationList.add(context.registerService(OpenbravoProductPhotoWebService.class.getName(), new OpenbravoProductPhotoWebService(), null));
     }
 
     public void stop(BundleContext context) {

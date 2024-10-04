@@ -1,0 +1,46 @@
+[
+  {
+    "title": "Openbravo Product Photo WebService",
+    "properties": [
+      {
+        "name": "baseUrl",
+        "label": "Base URL",
+        "type": "textfield",
+        "required": "true"
+      },
+      {
+        "label": "Authentication",
+        "type": "header"
+      },
+      {
+        "name": "username",
+        "label": "@@openbravo.username@@",
+        "type": "textfield",
+        "required": "true"
+      },
+      {
+        "name": "password",
+        "label": "@@openbravo.password@@",
+        "type": "password",
+        "required": "true"
+      }
+    ]
+  },
+  {
+    "title": "Advance",
+    "properties": [
+      {
+        "name": "ignoreCertificate",
+        "label": "Ignore SSL Certificate",
+        "type": "checkbox",
+        "value": "true",
+        "options": [
+          {
+            "value": "true",
+            "label": ""
+          }
+        ]
+      }
+    ]
+  }
+]
