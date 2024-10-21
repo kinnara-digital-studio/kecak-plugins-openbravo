@@ -4,6 +4,7 @@ import com.kinnarastudio.commons.Try;
 import com.kinnarastudio.commons.jsonstream.JSONStream;
 import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
+import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -20,14 +21,16 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Openbravo Form Binder
  */
-@Deprecated
-public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadElementBinder, RestMixin {
+public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBinder, FormStoreElementBinder, RestMixin {
+    public final static String LABEL = "Openbravo Form Binder";
+
     @Override
     public FormRowSet load(Element element, String primaryKey, FormData formData) {
         final WorkflowManager workflowManager = (WorkflowManager) AppUtil.getApplicationContext().getBean("workflowManager");
@@ -75,12 +78,72 @@ public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadEleme
         } catch (OpenbravoClientException | IOException | JSONException e) {
             LogUtil.error(getClassName(), e, e.getMessage());
             return null;
+        }    }
+
+    @Override
+    public FormRowSet store(Element form, FormRowSet rowSet, FormData formData) {
+        if(Boolean.parseBoolean(String.valueOf(form.getProperty("_stored")))) {
+            return rowSet;
+        }
+
+        final OpenbravoService obService = OpenbravoService.getInstance();
+        obService.setShortCircuit(true);
+        obService.setDebug(isDebug());
+        obService.setNoFilterActive(isNoFilterActive());
+        obService.setIgnoreCertificateError(isIgnoreCertificateError());
+
+        String tableEntity = getPropertyTableEntity(FormUtil.findRootForm(form));
+
+        final Map<String, Object> row = Optional.ofNullable(rowSet)
+                .stream()
+                .flatMap(FormRowSet::stream)
+                .findFirst()
+                .map(FormRow::entrySet)
+                .stream()
+                .flatMap(Collection::stream)
+                .collect(Collectors.toUnmodifiableMap(e -> String.valueOf(e.getKey()), entry -> {
+                    final String elementId = String.valueOf(entry.getKey());
+                    final Element element = FormUtil.findElement(elementId, form, formData);
+                    final boolean isNumeric = Optional.ofNullable(element)
+                            .map(Element::getValidator)
+                            .map(v -> v.getPropertyString("type"))
+                            .map("numeric"::equalsIgnoreCase)
+                            .orElse(false);
+
+                    try {
+                        return isNumeric ? new BigDecimal(String.valueOf(entry.getValue())) : String.valueOf(entry.getValue());
+                    } catch (NumberFormatException ex) {
+                        LogUtil.error(getClassName(), ex, "[" + entry.getValue() + "] is not a number");
+                        return entry.getValue();
+                    }
+                }));
+
+        try {
+            final FormRow result = Arrays.stream(obService.post(getPropertyBaseUrl(), tableEntity, getPropertyUsername(), getPropertyPassword(), new Map[]{row}))
+                    .map(Map<String, String>::entrySet)
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (accept, reject) -> accept, FormRow::new));
+
+            formData.setPrimaryKeyValue(result.getId());
+
+            return new FormRowSet() {{
+                add(result);
+            }};
+
+        } catch (OpenbravoClientException e) {
+            Map<String, String> errors = e.getErrors();
+            errors.forEach((field, message) -> LogUtil.warn(getClassName(), message));
+            errors.forEach(formData::addFormError);
+
+            LogUtil.error(getClassName(), e, e.getMessage());
+
+            return rowSet;
         }
     }
 
     @Override
     public String getName() {
-        return "Deprecated Openbravo Form Load Binder";
+        return LABEL;
     }
 
     @Override
@@ -98,7 +161,7 @@ public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadEleme
 
     @Override
     public String getLabel() {
-        return "Openbravo Form Load Binder";
+        return LABEL;
     }
 
     @Override
@@ -137,6 +200,15 @@ public class OpenbravoFormLoadBinder extends FormBinder implements FormLoadEleme
     }
 
     protected boolean getPropertyNoFilterActive() {
+        return "true".equalsIgnoreCase(getPropertyString("noFilterActive"));
+    }
+
+    protected String getPropertyTableEntity(Form form) {
+//        return form.getPropertyString(FormUtil.PROPERTY_TABLE_NAME);
+        return AppUtil.processHashVariable(getPropertyString("tableEntity"), null, null, null);
+    }
+
+    protected boolean isNoFilterActive() {
         return "true".equalsIgnoreCase(getPropertyString("noFilterActive"));
     }
 

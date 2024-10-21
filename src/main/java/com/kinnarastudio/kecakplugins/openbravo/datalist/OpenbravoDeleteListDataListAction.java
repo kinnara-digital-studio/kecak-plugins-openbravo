@@ -42,7 +42,7 @@ public class OpenbravoDeleteListDataListAction extends DataListActionDefault imp
 
     @Override
     public String getPropertyOptions() {
-        return AppUtil.readPluginResource(getClassName(), "/properties/OpenbravoDeleteListDataListAction.json", null, false, "/messages/Openbravo");
+        return AppUtil.readPluginResource(getClassName(), "/properties/datalist/OpenbravoDeleteListDataListAction.json", null, false, "/messages/Openbravo");
     }
 
     @Override

@@ -165,7 +165,7 @@ public class OpenbravoRecordActivationDataListAction extends DataListActionDefau
 
     @Override
     public String getPropertyOptions() {
-        return AppUtil.readPluginResource(getClassName(), "/properties/OpenbravoRecordActivationDataListAction.json", null, false, "/messages/Openbravo");
+        return AppUtil.readPluginResource(getClassName(), "/properties/datalist/OpenbravoRecordActivationDataListAction.json", null, false, "/messages/Openbravo");
     }
 
     protected String getPropertyBaseUrl() {

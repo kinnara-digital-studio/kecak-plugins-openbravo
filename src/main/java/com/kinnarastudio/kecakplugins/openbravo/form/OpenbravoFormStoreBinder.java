@@ -1,86 +1,83 @@
 package com.kinnarastudio.kecakplugins.openbravo.form;
 
-import com.kinnarastudio.commons.Try;
-import com.kinnarastudio.commons.jsonstream.JSONStream;
 import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpUriRequest;
+import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.form.model.*;
 import org.joget.apps.form.service.FormUtil;
 import org.joget.commons.util.LogUtil;
 import org.joget.plugin.base.PluginManager;
-import org.joget.workflow.model.WorkflowAssignment;
-import org.joget.workflow.model.WorkflowProcessLink;
-import org.joget.workflow.model.service.WorkflowManager;
-import org.json.JSONException;
-import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Openbravo Form Binder
  */
+@Deprecated
 public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreElementBinder, RestMixin {
 
     @Override
-    public FormRowSet store(Element element, FormRowSet rowSet, FormData formData) {
-        final WorkflowManager workflowManager = (WorkflowManager) AppUtil.getApplicationContext().getBean("workflowManager");
-        final WorkflowAssignment workflowAssignment = Optional.of(formData)
-                .map(FormData::getActivityId)
-                .map(workflowManager::getAssignment)
-                .orElse(null);
-
-        final Form form = FormUtil.findRootForm(element);
-        String tableEntity = getPropertyString("tableEntity");
-        final String url = getApiEndPoint(getPropertyBaseUrl(), tableEntity);
-        final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
-        final FormRow row = rowSet.get(0);
-        if (!isNewRecord(formData)) {
-            final String primaryKey = Optional.of(formData)
-                    .map(FormData::getProcessId)
-                    .map(workflowManager::getWorkflowProcessLink)
-                    .map(WorkflowProcessLink::getOriginProcessId)
-                    .orElse(formData.getPrimaryKeyValue().replaceAll("-", ""));
-            row.setId(primaryKey);
+    public FormRowSet store(Element form, FormRowSet rowSet, FormData formData) {
+        if(Boolean.parseBoolean(String.valueOf(form.getProperty("_stored")))) {
+            return rowSet;
         }
+
+        final OpenbravoService obService = OpenbravoService.getInstance();
+        obService.setShortCircuit(true);
+        obService.setDebug(isDebug());
+        obService.setNoFilterActive(isNoFilterActive());
+        obService.setIgnoreCertificateError(isIgnoreCertificateError());
+
+        String tableEntity = getPropertyTableEntity(FormUtil.findRootForm(form));
+
+        final Map<String, Object> row = Optional.ofNullable(rowSet)
+                .stream()
+                .flatMap(FormRowSet::stream)
+                .findFirst()
+                .map(FormRow::entrySet)
+                .stream()
+                .flatMap(Collection::stream)
+                .collect(Collectors.toUnmodifiableMap(e -> String.valueOf(e.getKey()), entry -> {
+                    final String elementId = String.valueOf(entry.getKey());
+                    final Element element = FormUtil.findElement(elementId, form, formData);
+                    final boolean isNumeric = Optional.ofNullable(element)
+                            .map(Element::getValidator)
+                            .map(v -> v.getPropertyString("type"))
+                            .map("numeric"::equalsIgnoreCase)
+                            .orElse(false);
+
+                    try {
+                        return isNumeric ? new BigDecimal(String.valueOf(entry.getValue())) : String.valueOf(entry.getValue());
+                    } catch (NumberFormatException ex) {
+                        LogUtil.error(getClassName(), ex, "[" + entry.getValue() + "] is not a number");
+                        return entry.getValue();
+                    }
+                }));
 
         try {
-            final HttpUriRequest request = getHttpRequest(workflowAssignment, url, "POST", headers, row);
-            final HttpClient client = getHttpClient(isIgnoreCertificateError());
-            final HttpResponse response = client.execute(request);
+            final FormRow result = Arrays.stream(obService.post(getPropertyBaseUrl(), tableEntity, getPropertyUsername(), getPropertyPassword(), new Map[]{row}))
+                    .map(Map<String, String>::entrySet)
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (accept, reject) -> accept, FormRow::new));
 
-            final int statusCode = getResponseStatus(response);
-            if (getStatusGroupCode(statusCode) != 200) {
-                throw new OpenbravoClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
-            } else if (statusCode != 200) {
-                LogUtil.warn(getClassName(), "Response code [" + statusCode + "] is considered as success");
-            }
+            formData.setPrimaryKeyValue(result.getId());
 
-            if (!isJsonResponse(response)) {
-                throw new OpenbravoClientException("Content type is not JSON");
-            }
+            return new FormRowSet() {{
+                add(result);
+            }};
 
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                final JSONObject jsonResponseBody = new JSONObject(br.lines().collect(Collectors.joining())).getJSONObject("response");
-                LogUtil.info(getClassName(), "JSON Response Body Store Binder: " + jsonResponseBody.toString());
-                final int status = jsonResponseBody.getInt("status");
-                if (status != 0) {
-                    throw new OpenbravoClientException(jsonResponseBody.getJSONObject("response").getJSONObject("error").getString("message"));
-                }
-            }
-        } catch (OpenbravoClientException | IOException | JSONException e) {
+        } catch (OpenbravoClientException e) {
+            Map<String, String> errors = e.getErrors();
+            errors.forEach((field, message) -> LogUtil.warn(getClassName(), message));
+            errors.forEach(formData::addFormError);
+
             LogUtil.error(getClassName(), e, e.getMessage());
-            formData.addFormError("", e.getMessage());
-        }
 
-        return rowSet;
+            return rowSet;
+        }
     }
 
     @Override
@@ -103,7 +100,7 @@ public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreEle
 
     @Override
     public String getLabel() {
-        return "Openbravo Form Store Binder";
+        return "Deprecated Openbravo Form Store Binder";
     }
 
     @Override
@@ -113,7 +110,7 @@ public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreEle
 
     @Override
     public String getPropertyOptions() {
-        return AppUtil.readPluginResource(getClassName(), "/properties/OpenbravoFormBinder.json", null, false, "/messages/Openbravo");
+        return AppUtil.readPluginResource(getClassName(), "/properties/form/OpenbravoFormBinder.json", null, false, "/messages/Openbravo");
     }
 
     protected String getPropertyBaseUrl() {
@@ -121,8 +118,8 @@ public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreEle
     }
 
     protected String getPropertyTableEntity(Form form) {
-        return form.getPropertyString(FormUtil.PROPERTY_TABLE_NAME);
-//        return AppUtil.processHashVariable(getPropertyString("tableEntity"), null, null, null);
+//        return form.getPropertyString(FormUtil.PROPERTY_TABLE_NAME);
+        return AppUtil.processHashVariable(getPropertyString("tableEntity"), null, null, null);
     }
 
     protected String getPropertyUsername() {
@@ -133,24 +130,7 @@ public class OpenbravoFormStoreBinder extends FormBinder implements FormStoreEle
         return AppUtil.processHashVariable(getPropertyString("password"), null, null, null);
     }
 
-    protected String getAuthenticationHeader(String username, String password) {
-        return "Basic " + Base64.getEncoder().encodeToString(String.format("%s:%s", username, password).getBytes());
-    }
-
-    protected String getApiEndPoint(String baseUrl, String tableEntity) {
-        return baseUrl + "/org.openbravo.service.json.jsonrest/" + tableEntity;
-    }
-
-    protected String getApiEndPoint(String baseUrl, String tableEntity, String primaryKey) {
-        return baseUrl + "/org.openbravo.service.json.jsonrest/" + tableEntity + "/" + primaryKey;
-    }
-
-    protected FormRow convertJson(JSONObject json) {
-        return JSONStream.of(json, Try.onBiFunction(JSONObject::getString))
-                .collect(FormRow::new, (row, e) -> row.setProperty(e.getKey(), e.getValue()), FormRow::putAll);
-    }
-
-    protected boolean getPropertyNoFilterActive() {
+    protected boolean isNoFilterActive() {
         return "true".equalsIgnoreCase(getPropertyString("noFilterActive"));
     }
 

@@ -127,7 +127,7 @@ public class OpenbravoOptionsBinder extends FormBinder implements FormLoadOption
 
     @Override
     public String getPropertyOptions() {
-        return AppUtil.readPluginResource(getClassName(), "/properties/OpenbravoOptionBinder.json", null, false, "/messages/Openbravo");
+        return AppUtil.readPluginResource(getClassName(), "/properties/form/OpenbravoOptionBinder.json", null, false, "/messages/Openbravo");
     }
 
     @Override

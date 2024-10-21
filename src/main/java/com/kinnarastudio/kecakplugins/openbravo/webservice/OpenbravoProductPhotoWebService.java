@@ -13,7 +13,6 @@ import org.joget.apps.app.dao.PluginDefaultPropertiesDao;
 import org.joget.apps.app.model.AppDefinition;
 import org.joget.apps.app.model.PluginDefaultProperties;
 import org.joget.apps.app.service.AppUtil;
-import org.joget.commons.util.LogUtil;
 import org.joget.commons.util.StringUtil;
 import org.joget.plugin.base.DefaultApplicationPlugin;
 import org.joget.plugin.base.PluginManager;
@@ -21,7 +20,6 @@ import org.joget.plugin.base.PluginWebSupport;
 import org.joget.plugin.property.service.PropertyUtil;
 import org.kecak.apps.exception.ApiException;
 
-import javax.annotation.Nonnull;
 import javax.net.ssl.SSLContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -33,7 +31,6 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.stream.Stream;
 
 public class OpenbravoProductPhotoWebService extends DefaultApplicationPlugin implements PluginWebSupport {
     public final static String LABEL = "Openbravo Product Photo";
@@ -128,7 +125,7 @@ public class OpenbravoProductPhotoWebService extends DefaultApplicationPlugin im
 
     @Override
     public String getPropertyOptions() {
-        return AppUtil.readPluginResource(getClassName(), "/properties/OpenbravoProductPhotoWebService.json", null, true, "/messages/Openbravo");
+        return AppUtil.readPluginResource(getClassName(), "/properties/webservice/OpenbravoProductPhotoWebService.json", null, true, "/messages/Openbravo");
     }
 
     protected String getRequiredParameter(HttpServletRequest request, String parameterName) throws ApiException {

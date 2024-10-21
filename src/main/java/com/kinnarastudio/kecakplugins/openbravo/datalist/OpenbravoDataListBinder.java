@@ -208,7 +208,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
 
     @Override
     public String getPropertyOptions() {
-        return AppUtil.readPluginResource(getClassName(), "/properties/OpenbravoDataListBinder.json", null, false, "/messages/Openbravo");
+        return AppUtil.readPluginResource(getClassName(), "/properties/datalist/OpenbravoDataListBinder.json", null, false, "/messages/Openbravo");
     }
 
     protected String getPropertyBaseUrl() {
