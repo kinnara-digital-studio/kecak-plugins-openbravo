@@ -23,8 +23,6 @@ public class Activator implements BundleActivator {
 
         //Register plugin here
         registrationList.add(context.registerService(OpenbravoFormBinder.class.getName(), new OpenbravoFormBinder(), null));
-        registrationList.add(context.registerService(OpenbravoFormLoadBinder.class.getName(), new OpenbravoFormLoadBinder(), null));
-        registrationList.add(context.registerService(OpenbravoFormStoreBinder.class.getName(), new OpenbravoFormStoreBinder(), null));
         registrationList.add(context.registerService(OpenbravoGridBinder.class.getName(), new OpenbravoGridBinder(), null));
         registrationList.add(context.registerService(OpenbravoDataListBinder.class.getName(), new OpenbravoDataListBinder(), null));
         registrationList.add(context.registerService(OpenbravoRecordActivationDataListAction.class.getName(), new OpenbravoRecordActivationDataListAction(), null));
