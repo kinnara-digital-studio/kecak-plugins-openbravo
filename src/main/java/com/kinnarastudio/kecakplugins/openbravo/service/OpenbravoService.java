@@ -106,8 +106,6 @@ public class OpenbravoService {
                     LogUtil.info(getClass().getName(), "get : responsePayload [" + responsePayload + "]");
                 }
 
-                LogUtil.info(getClass().getName(), "get 1 : responsePayload [" + responsePayload + "]");
-
                 final JSONObject jsonResponse = new JSONObject(responsePayload)
                         .getJSONObject("response");
 
@@ -175,8 +173,6 @@ public class OpenbravoService {
                 if (isDebug) {
                     LogUtil.info(getClass().getName(), "get : responsePayload [" + responsePayload + "]");
                 }
-
-                LogUtil.info(getClass().getName(), "get 2 : responsePayload [" + responsePayload + "]");
 
                 final JSONObject jsonResponse = new JSONObject(responsePayload)
                         .getJSONObject("response");
