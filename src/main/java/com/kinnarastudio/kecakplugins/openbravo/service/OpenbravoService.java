@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -62,9 +63,7 @@ public class OpenbravoService {
 
     @Nonnull
     public Map<String, String> get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String primaryKey, @Nonnull String username, @Nonnull String password) throws OpenbravoClientException {
-        if (isDebug) {
-            LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] primaryKey [" + primaryKey + "] username [" + username + "] password [" + password + "]");
-        }
+        LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] primaryKey [" + primaryKey + "] username [" + username + "] password [" + (isDebug ? "*" : password) + "]");
 
         try {
             final RestService restService = RestService.getInstance();
@@ -107,6 +106,8 @@ public class OpenbravoService {
                     LogUtil.info(getClass().getName(), "get : responsePayload [" + responsePayload + "]");
                 }
 
+                LogUtil.info(getClass().getName(), "get 1 : responsePayload [" + responsePayload + "]");
+
                 final JSONObject jsonResponse = new JSONObject(responsePayload)
                         .getJSONObject("response");
 
@@ -116,7 +117,8 @@ public class OpenbravoService {
                     throw new OpenbravoClientException(responsePayload);
                 }
 
-                return JSONStream.of(jsonResponse.getJSONObject("data"), Try.onBiFunction(JSONObject::getString))
+                final JSONObject jsonData = jsonResponse.getJSONObject("data");
+                return JSONStream.of(jsonData, Try.onBiFunction(JSONObject::getString))
                         .peek(e -> {
                             if (isDebug && "_identifier".equals(e.getKey())) {
                                 LogUtil.info(getClass().getName(), "get : identifier [" + e.getValue() + "]");
@@ -130,9 +132,7 @@ public class OpenbravoService {
     }
 
     public Map<String, String>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, Map<String, String> filter) throws OpenbravoClientException {
-        if (isDebug) {
-            LogUtil.info(getClass().getName(), "post : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "] password [" + password + "]");
-        }
+        LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "] password [" + (isDebug ? "*" : password) + "]");
 
         try {
             final RestService restService = RestService.getInstance();
@@ -149,11 +149,10 @@ public class OpenbravoService {
             final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getAuthenticationHeader(username, password));
             final HttpClient client = restService.getHttpClient();
 
-            Optional.ofNullable(filter)
-                    .map(Map::entrySet)
-                    .stream()
-                    .flatMap(Collection::stream)
-                    .forEach(e -> addUrlParameter(url, e.getKey(), e.getValue()));
+            if (!filter.isEmpty()) {
+                final String whereCondition = getFilterWhereCondition(filter);
+                addUrlParameter(url, "_where", URLEncoder.encode(whereCondition));
+            }
 
             final HttpUriRequest request = restService.getHttpRequest(url.toString(), headers);
 
@@ -177,6 +176,8 @@ public class OpenbravoService {
                     LogUtil.info(getClass().getName(), "get : responsePayload [" + responsePayload + "]");
                 }
 
+                LogUtil.info(getClass().getName(), "get 2 : responsePayload [" + responsePayload + "]");
+
                 final JSONObject jsonResponse = new JSONObject(responsePayload)
                         .getJSONObject("response");
 
@@ -185,13 +186,11 @@ public class OpenbravoService {
                     throw new OpenbravoClientException(responsePayload);
                 }
 
-                return new Map[]{JSONStream.of(jsonResponse.getJSONObject("data"), Try.onBiFunction(JSONObject::getString))
-                        .peek(e -> {
-                            if (isDebug && "_identifier".equals(e.getKey())) {
-                                LogUtil.info(getClass().getName(), "get : identifier [" + e.getValue() + "]");
-                            }
-                        })
-                        .collect(Collectors.toUnmodifiableMap(JSONObjectEntry::getKey, JSONObjectEntry::getValue))};
+                final JSONArray jsonData = jsonResponse.getJSONArray("data");
+                return JSONStream.of(jsonData, Try.onBiFunction(JSONArray::getJSONObject))
+                        .map(json -> JSONStream.of(json, Try.onBiFunction(JSONObject::getString))
+                                .collect(Collectors.toMap(JSONObjectEntry::getKey, JSONObjectEntry::getValue)))
+                        .toArray(Map[]::new);
             }
         } catch (RestClientException | JSONException | IOException e) {
             throw new OpenbravoClientException(e);
@@ -199,10 +198,13 @@ public class OpenbravoService {
     }
 
     public synchronized Map<String, Object>[] post(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nonnull Map<String, Object>[] rows) throws OpenbravoClientException {
-        if (isDebug) {
-            LogUtil.info(getClass().getName(), "post : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "] password [" + password + "]");
-        }
+        LogUtil.info(getClass().getName(), "post : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "] password [" + (isDebug ? "*" : password) + "]");
 
+        if (isDebug) {
+            for (Map<String, Object> row : rows) {
+                LogUtil.info(getClass().getName(), "post : rows [" + row + "]");
+            }
+        }
         try {
             final RestService restService = RestService.getInstance();
             restService.setIgnoreCertificate(ignoreCertificateError);
@@ -214,14 +216,10 @@ public class OpenbravoService {
 
             cutCircuit = false;
 
+
             final Map[] result = Arrays.stream(rows)
-                    .map(Try.onFunction(row -> {
+                    .map(row -> {
                         if (cutCircuit) return null;
-
-                        if (isDebug) {
-                            LogUtil.info(getClass().getName(), "post : row [" + row.entrySet().stream().map(e -> String.join("->", e.getKey(), String.valueOf(e.getValue()))).collect(Collectors.joining(";")) + "]");
-                        }
-
                         try {
                             final JSONObject jsonBody = new JSONObject() {{
                                 put("data", row.entrySet()
@@ -247,7 +245,7 @@ public class OpenbravoService {
                             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
                                 final String responsePayload = br.lines().collect(Collectors.joining());
                                 if (isDebug) {
-                                    LogUtil.info(getClass().getName(), "put : responsePayload [" + responsePayload + "]");
+                                    LogUtil.info(getClass().getName(), "post : responsePayload [" + responsePayload + "]");
                                 }
                                 final JSONObject jsonResponse = new JSONObject(responsePayload)
                                         .getJSONObject("response");
@@ -255,7 +253,8 @@ public class OpenbravoService {
                                 final int status = jsonResponse.getInt("status");
                                 if (status != 0) {
                                     if (status == -4) {
-                                        final Map<String, String> errors = JSONStream.of(jsonResponse.getJSONObject("errors"), Try.onBiFunction(JSONObject::getString))
+                                        final JSONObject jsonErrors = jsonResponse.getJSONObject("errors");
+                                        final Map<String, String> errors = JSONStream.of(jsonErrors, Try.onBiFunction(JSONObject::getString))
                                                 .collect(Collectors.toUnmodifiableMap(JSONObjectEntry::getKey, JSONObjectEntry::getValue));
                                         throw new OpenbravoClientException(errors);
                                     } else {
@@ -263,13 +262,17 @@ public class OpenbravoService {
                                     }
                                 }
 
-                                Map<String, String> data = JSONStream.of(jsonResponse.getJSONArray("data"), Try.onBiFunction(JSONArray::getJSONObject))
+                                final JSONArray jsonData = jsonResponse.getJSONArray("data");
+                                final Map<String, Object> data = JSONStream.of(jsonData, Try.onBiFunction(JSONArray::getJSONObject))
                                         .findFirst()
                                         .stream()
-                                        .flatMap(json -> JSONStream.of(json, Try.onBiFunction(JSONObject::getString)))
+                                        .flatMap(json -> JSONStream.of(json, Try.onBiFunction(JSONObject::get)))
                                         .collect(Collectors.toUnmodifiableMap(JSONObjectEntry::getKey, JSONObjectEntry::getValue));
 
-                                LogUtil.info(getClass().getName(), "post : data posted [" + data.get("_identifier") + "]");
+                                if (isDebug) {
+                                    LogUtil.info(getClass().getName(), "post : data result posted [" + data + "]");
+                                }
+                                LogUtil.info(getClass().getName(), "post : data posted [" + data.get("id") + "][" + data.get("_identifier") + "]");
                                 return data;
                             }
                         } catch (OpenbravoClientException | RestClientException | IOException | JSONException e) {
@@ -279,20 +282,14 @@ public class OpenbravoService {
                                 return null;
                             }
 
-                            return Collections.emptyMap();
+                            return Collections.<String, String>emptyMap();
                         }
-                    }))
+                    })
                     .filter(Objects::nonNull)
                     .toArray(Map[]::new);
 
-            if (isDebug) {
-                for (Map<String, String> row : result) {
-                    LogUtil.info(getClass().getName(), "post : result row [" + row.entrySet().stream().map(e -> e.getKey() + "->" + e.getValue()).collect(Collectors.joining(";")) + "]");
-                }
-            }
-
             if (rows.length != result.length)
-                throw new OpenbravoClientException("Request length and response length are different");
+                throw new OpenbravoClientException("Request length [" + rows.length + "] and response length [" + result.length + "] are different");
 
             return (Map<String, Object>[]) result;
         } catch (RestClientException e) {
@@ -375,6 +372,16 @@ public class OpenbravoService {
 
     public void setNoFilterActive(boolean noFilterActive) {
         this.noFilterActive = noFilterActive;
+    }
+
+    protected String getFilterWhereCondition(Map<String, String> filter) {
+        return Optional.ofNullable(filter)
+                .map(Map::entrySet)
+                .stream()
+                .flatMap(Collection::stream)
+                .map(e -> e.getKey() + "='" + e.getValue() + "'")
+                .collect(Collectors.joining(") AND (", "(", ")"));
+
     }
 
     protected void errorHandler(JSONObject jsonResponse) throws OpenbravoClientException, JSONException {

@@ -33,6 +33,10 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
 
     @Override
     public FormRowSet load(Element element, String primaryKey, FormData formData) {
+        LogUtil.info(getClassName(), "load");
+
+        if (primaryKey == null || primaryKey.isEmpty()) return null;
+
         final WorkflowManager workflowManager = (WorkflowManager) AppUtil.getApplicationContext().getBean("workflowManager");
         final WorkflowAssignment workflowAssignment = Optional.of(formData)
                 .map(FormData::getActivityId)
@@ -78,17 +82,30 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
         } catch (OpenbravoClientException | IOException | JSONException e) {
             LogUtil.error(getClassName(), e, e.getMessage());
             return null;
-        }    }
+        }
+    }
 
     @Override
     public FormRowSet store(Element form, FormRowSet rowSet, FormData formData) {
-        if(Boolean.parseBoolean(String.valueOf(form.getProperty("_stored")))) {
+        LogUtil.info(getClassName(), "store");
+
+        final Boolean isStored = (Boolean) form.getProperty("_stored");
+        if(isStored != null && !isStored) {
             return rowSet;
         }
 
+        final boolean isDebugging = isDebuging();
+        if(isDebugging) {
+            LogUtil.info(getClassName(), "store : isDebugging");
+        }
+
+        if (Boolean.parseBoolean(String.valueOf(form.getProperty("_stored")))) {
+            return formData.getStoreBinderData(form.getStoreBinder());
+        }
+
         final OpenbravoService obService = OpenbravoService.getInstance();
-        obService.setShortCircuit(true);
-        obService.setDebug(isDebug());
+        obService.setShortCircuit(false);
+        obService.setDebug(isDebugging);
         obService.setNoFilterActive(isNoFilterActive());
         obService.setIgnoreCertificateError(isIgnoreCertificateError());
 
@@ -120,15 +137,19 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
 
         try {
             final FormRow result = Arrays.stream(obService.post(getPropertyBaseUrl(), tableEntity, getPropertyUsername(), getPropertyPassword(), new Map[]{row}))
-                    .map(Map<String, String>::entrySet)
+                    .map(Map<String, Object>::entrySet)
                     .flatMap(Collection::stream)
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (accept, reject) -> accept, FormRow::new));
 
-            formData.setPrimaryKeyValue(result.getId());
-
-            return new FormRowSet() {{
+            FormRowSet resultRowSet = new FormRowSet() {{
                 add(result);
             }};
+
+            formData.setStoreBinderData(form.getStoreBinder(), resultRowSet);
+            form.setProperty("_stored", true);
+            formData.setPrimaryKeyValue(result.getId());
+
+            return resultRowSet;
 
         } catch (OpenbravoClientException e) {
             Map<String, String> errors = e.getErrors();
@@ -137,7 +158,7 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
 
             LogUtil.error(getClassName(), e, e.getMessage());
 
-            return rowSet;
+            return null;
         }
     }
 
@@ -217,5 +238,10 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
                 .map(FormData::getLoadBinderMap)
                 .map(Map::isEmpty)
                 .orElse(true);
+    }
+
+    @Override
+    public boolean isDebuging() {
+        return "true".equalsIgnoreCase(getPropertyString("debug"));
     }
 }

@@ -90,12 +90,12 @@ public class RestService {
     }
 
     public HttpUriRequest getHttpRequest(@Nonnull String url, @Nonnull Map<String, String> headers) throws OpenbravoClientException, RestClientException {
-        return getHttpRequest(url, "GET", headers , null);
+        return getHttpRequest(url, "GET", headers, null);
     }
 
     public HttpUriRequest getHttpRequest(@Nonnull String url, @Nonnull String method, @Nonnull Map<String, String> headers, @Nullable JSONObject bodyPayload) throws OpenbravoClientException, RestClientException {
         if (isDebug) {
-            LogUtil.info(getClass().getName(), "getHttpRequest url [" + url + "] method [" + method + "]");
+            LogUtil.info(getClass().getName(), "getHttpRequest url [" + url + "] method [" + method + "] bodyPayload [" + bodyPayload + "]");
         }
 
         @Nullable HttpEntity httpEntity;

@@ -22,10 +22,14 @@ public class OpenbravoGridBinder extends FormBinder
 
     @Override
     public FormRowSet load(Element element, String primaryKey, FormData formData) {
+        LogUtil.info(getClassName(), "load");
+
         if (primaryKey == null || primaryKey.isEmpty()) return null;
 
         final OpenbravoService obService = OpenbravoService.getInstance();
-        obService.setDebug(isDebuging());
+        obService.setIgnoreCertificateError(isIgnoringCertificateError());
+        obService.setNoFilterActive(isNoFilterActive());
+        obService.setDebug(isDebugging());
 
         try {
             final Map<String, String> filter = Collections.singletonMap(getForeignKey(), primaryKey);
@@ -44,11 +48,22 @@ public class OpenbravoGridBinder extends FormBinder
 
     @Override
     public FormRowSet store(Element element, FormRowSet rowSet, FormData formData) {
+        LogUtil.info(getClassName(), "store");
+
+        final boolean isDebugging = isDebugging();
+        if (isDebugging) {
+            LogUtil.info(getClassName(), "store : isDebugging");
+        } else {
+            getProperties().forEach((k, v) -> {
+                LogUtil.info(getClassName(), "getProperties [" + k + "][" + v + "]");
+            });
+        }
+
         try {
             final OpenbravoService obService = OpenbravoService.getInstance();
-            obService.setDebug(isDebuging());
+            obService.setDebug(isDebugging);
             obService.setIgnoreCertificateError(isIgnoringCertificateError());
-            obService.setShortCircuit(true);
+            obService.setShortCircuit(false);
             obService.setNoFilterActive(isNoFilterActive());
 
             Form parentForm = FormUtil.findRootForm(element);
@@ -60,31 +75,32 @@ public class OpenbravoGridBinder extends FormBinder
                     .stream()
                     .flatMap(Collection::stream)
                     .findFirst()
-                    .ifPresent(r -> {
-                        formData.setPrimaryKeyValue(r.getId());
-                        parentForm.setProperty("_stored", Boolean.TRUE);
-                    });
-
-            final Form form = obService.generateForm(getFormDefId());
-            String primaryKeyValue = parentForm.getPrimaryKeyValue(formData);
-
-
-//        FormRowSet originalRowSet = this.load(element, primaryKeyValue, formData);
+                    .map(FormRow::getId)
+                    .ifPresent(formData::setPrimaryKeyValue);
 
             final String foreignKey = getForeignKey();
+
+            final Form form = obService.generateForm(getFormDefId());
+            String foreignKeyValue = parentForm.getPrimaryKeyValue(formData);
+
+            if (foreignKeyValue == null) {
+                throw new OpenbravoClientException(Collections.singletonMap(foreignKey, "Foreign key [" + foreignKey + "] is NULL"));
+            }
+
+            final String gridElementId = element.getPropertyString("id");
+            LogUtil.info(getClassName(), "elementId [" + gridElementId + "]");
+
             final Map<String, Object>[] rows = Optional.ofNullable(rowSet)
                     .stream()
                     .flatMap(FormRowSet::stream)
-                    .peek(row -> row.setProperty(foreignKey, primaryKeyValue))
-                    .map(r -> ((Map<Object, Object>) r.getCustomProperties())
-                            .entrySet()
+                    .peek(row -> LogUtil.info(getClassName(), "rowSet [" + row.keySet().stream().anyMatch(gridElementId::equals) + "][" + row.entrySet().stream().map(e -> "{" + e.getKey() + "->" + e.getValue() +"}").collect(Collectors.joining(" || ")) + "]"))
+                    .filter(row -> !row.keySet().stream().anyMatch(gridElementId::equals))
+                    .map(row -> row.entrySet()
                             .stream()
-                            .filter(e -> {
-                                final String key = e.getKey().toString();
-                                return !key.isEmpty() && !"id".equalsIgnoreCase(key);
-                            })
-                            .collect(Collectors.toUnmodifiableMap(e -> e.getKey().toString(), entry -> {
-                                final String elementId = String.valueOf(entry.getKey());
+                            .filter(e -> e.getKey() instanceof String && e.getValue() instanceof String)
+                            .filter(e -> !"id".equalsIgnoreCase(String.valueOf(e.getKey())))
+                            .collect(Collectors.toMap(e -> String.valueOf(e.getKey()), e -> {
+                                final String elementId = String.valueOf(e.getKey());
                                 final Element elmn = FormUtil.findElement(elementId, form, formData);
                                 final boolean isNumeric = Optional.ofNullable(elmn)
                                         .map(Element::getValidator)
@@ -93,20 +109,19 @@ public class OpenbravoGridBinder extends FormBinder
                                         .orElse(false);
 
                                 try {
-                                    return isNumeric ? new BigDecimal(String.valueOf(entry.getValue())) : String.valueOf(entry.getValue());
+                                    return isNumeric ? new BigDecimal(String.valueOf(e.getValue())) : String.valueOf(e.getValue());
                                 } catch (NumberFormatException ex) {
-                                    LogUtil.error(getClassName(), ex, "[" + entry.getValue() + "] is not a number");
-                                    return entry.getValue();
+                                    LogUtil.error(getClassName(), ex, "[" + e.getValue() + "] is not a number");
+                                    return String.valueOf(e.getValue());
                                 }
                             })))
                     .toArray(Map[]::new);
 
+            Arrays.stream(rows).forEach(m -> m.put(foreignKey, foreignKeyValue));
 
-            Map<String, Object>[] result = obService.post(getBaseUrl(), getTableEntity(), getUsername(), getPassword(), rows);
+            final Map<String, Object>[] result = obService.post(getBaseUrl(), getTableEntity(), getUsername(), getPassword(), rows);
             return Arrays.stream(result)
-                    .map(m -> new FormRow() {{
-                        putAll(m);
-                    }})
+                    .map(m -> m.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, i) -> a, FormRow::new)))
                     .collect(Collectors.toCollection(FormRowSet::new));
         } catch (OpenbravoClientException e) {
             final Map<String, String> errors = e.getErrors();
@@ -171,9 +186,11 @@ public class OpenbravoGridBinder extends FormBinder
         return getPropertyString("foreignKey");
     }
 
-    public boolean isDebuging() {
+    public boolean isDebugging() {
         return "true".equalsIgnoreCase(getPropertyString("debug"));
+//        return true;
     }
+
 
     public boolean isIgnoringCertificateError() {
         return "true".equalsIgnoreCase(getPropertyString("ignoreCertificateError"));

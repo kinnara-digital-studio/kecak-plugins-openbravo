@@ -27,6 +27,11 @@ public class OpenbravoClientException extends Exception {
     }
 
     public OpenbravoClientException(Map<String,String> errors) {
+        this(errors.toString(), errors);
+    }
+
+    public OpenbravoClientException(String message, Map<String,String> errors) {
+        super(message);
         this.errors = errors;
     }
 

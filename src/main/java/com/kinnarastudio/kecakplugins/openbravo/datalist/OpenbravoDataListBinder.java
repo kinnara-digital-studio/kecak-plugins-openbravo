@@ -255,8 +255,8 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
     protected String getFilterWhereCondition(DataListFilterQueryObject[] filterQueryObjects) {
         final Pattern p = Pattern.compile("\\?");
         String whereCondition = Optional.ofNullable(filterQueryObjects)
-                .map(Arrays::stream)
-                .orElseGet(Stream::empty)
+                .stream()
+                .flatMap(Arrays::stream)
                 .map(filterQueryObject -> {
                     final String operator = ifEmptyThen(filterQueryObject.getOperator(), "AND");
                     final String query = filterQueryObject.getQuery().replaceAll("\\$_identifier", "\\.name");
