@@ -22,8 +22,6 @@ public class OpenbravoGridBinder extends FormBinder
 
     @Override
     public FormRowSet load(Element element, String primaryKey, FormData formData) {
-        LogUtil.info(getClassName(), "load");
-
         if (primaryKey == null || primaryKey.isEmpty()) return null;
 
         final OpenbravoService obService = OpenbravoService.getInstance();
@@ -48,16 +46,7 @@ public class OpenbravoGridBinder extends FormBinder
 
     @Override
     public FormRowSet store(Element element, FormRowSet rowSet, FormData formData) {
-        LogUtil.info(getClassName(), "store");
-
         final boolean isDebugging = isDebugging();
-        if (isDebugging) {
-            LogUtil.info(getClassName(), "store : isDebugging");
-        } else {
-            getProperties().forEach((k, v) -> {
-                LogUtil.info(getClassName(), "getProperties [" + k + "][" + v + "]");
-            });
-        }
 
         try {
             final OpenbravoService obService = OpenbravoService.getInstance();
@@ -88,17 +77,15 @@ public class OpenbravoGridBinder extends FormBinder
             }
 
             final String gridElementId = element.getPropertyString("id");
-            LogUtil.info(getClassName(), "elementId [" + gridElementId + "]");
 
-            final Map<String, Object>[] rows = Optional.ofNullable(rowSet)
+            final Map[] rows = Optional.ofNullable(rowSet)
                     .stream()
                     .flatMap(FormRowSet::stream)
-                    .peek(row -> LogUtil.info(getClassName(), "rowSet [" + row.keySet().stream().anyMatch(gridElementId::equals) + "][" + row.entrySet().stream().map(e -> "{" + e.getKey() + "->" + e.getValue() +"}").collect(Collectors.joining(" || ")) + "]"))
-                    .filter(row -> !row.keySet().stream().anyMatch(gridElementId::equals))
+//                    .filter(row -> row.keySet().stream().noneMatch(gridElementId::equals))
                     .map(row -> row.entrySet()
                             .stream()
-                            .filter(e -> e.getKey() instanceof String && e.getValue() instanceof String)
                             .filter(e -> !"id".equalsIgnoreCase(String.valueOf(e.getKey())))
+                            .filter(e -> !gridElementId.equals(String.valueOf(e.getKey())))
                             .collect(Collectors.toMap(e -> String.valueOf(e.getKey()), e -> {
                                 final String elementId = String.valueOf(e.getKey());
                                 final Element elmn = FormUtil.findElement(elementId, form, formData);
@@ -115,6 +102,7 @@ public class OpenbravoGridBinder extends FormBinder
                                     return String.valueOf(e.getValue());
                                 }
                             })))
+                    .filter(m -> !m.isEmpty())
                     .toArray(Map[]::new);
 
             Arrays.stream(rows).forEach(m -> m.put(foreignKey, foreignKeyValue));

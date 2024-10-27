@@ -33,8 +33,6 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
 
     @Override
     public FormRowSet load(Element element, String primaryKey, FormData formData) {
-        LogUtil.info(getClassName(), "load");
-
         if (primaryKey == null || primaryKey.isEmpty()) return null;
 
         final WorkflowManager workflowManager = (WorkflowManager) AppUtil.getApplicationContext().getBean("workflowManager");
@@ -73,7 +71,6 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
                 final JSONObject jsonResponseBody = new JSONObject(br.lines().collect(Collectors.joining()));
-                LogUtil.info(getClassName(), "JSON Response Body Load Binder: " + jsonResponseBody.toString());
                 final FormRowSet rowSet = new FormRowSet();
                 final FormRow row = convertJson(jsonResponseBody);
                 rowSet.add(row);
@@ -87,17 +84,12 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
 
     @Override
     public FormRowSet store(Element form, FormRowSet rowSet, FormData formData) {
-        LogUtil.info(getClassName(), "store");
-
         final Boolean isStored = (Boolean) form.getProperty("_stored");
         if(isStored != null && !isStored) {
             return rowSet;
         }
 
         final boolean isDebugging = isDebuging();
-        if(isDebugging) {
-            LogUtil.info(getClassName(), "store : isDebugging");
-        }
 
         if (Boolean.parseBoolean(String.valueOf(form.getProperty("_stored")))) {
             return formData.getStoreBinderData(form.getStoreBinder());
