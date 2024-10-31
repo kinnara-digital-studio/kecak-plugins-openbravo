@@ -64,13 +64,6 @@
     "title": "Advance",
     "properties" : [
       {
-        "name": "fetchLimit",
-        "label": "Fetch Limit",
-        "type": "textfield",
-        "required": "true",
-        "value": "999"
-      },
-      {
         "name" : "ignoreCertificateError",
         "label" : "@@openbravo.ignoreCertificateError@@",
         "type" : "checkbox",
