@@ -760,7 +760,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
                 .orElseThrow(() -> new OpenbravoClientException("DataList [" + datalistId + "] not found"));
     }
 
-    default void addUrlParameter(@Nonnull final StringBuilder url, String parameterName, String parameterValue) {
+    default void addUrlParameter(@Nonnull final StringBuilder url, @Nonnull String parameterName, @Nonnull String parameterValue) {
         url.append(String.format("%s%s=%s", (url.toString().contains("?") ? "&" : "?"), parameterName, parameterValue));
     }
 

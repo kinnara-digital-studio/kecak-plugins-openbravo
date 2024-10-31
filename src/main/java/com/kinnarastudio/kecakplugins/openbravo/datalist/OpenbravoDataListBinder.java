@@ -1,30 +1,18 @@
 package com.kinnarastudio.kecakplugins.openbravo.datalist;
 
-import com.kinnarastudio.commons.Try;
-import com.kinnarastudio.commons.jsonstream.JSONStream;
 import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpUriRequest;
+import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.model.*;
 import org.joget.commons.util.LogUtil;
 import org.joget.plugin.base.PluginManager;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import javax.annotation.Nullable;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URLEncoder;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Openbravo DataList Binder
@@ -53,69 +41,34 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
 
     @Override
     public DataListCollection<Map<String, String>> getData(@Nullable DataList dataList, @Nullable Map properties, @Nullable DataListFilterQueryObject[] filterQueryObjects, String sort, @Nullable Boolean desc, @Nullable Integer start, @Nullable Integer rows) {
+        final OpenbravoService obService = OpenbravoService.getInstance();
+        obService.setDebug(isDebuging());
+        obService.setIgnoreCertificateError(isIgnoreCertificateError());
+        obService.setNoFilterActive(getPropertyNoFilterActive());
+
+        final String baseUrl = getPropertyBaseUrl();
+        final String tableEntity = getPropertyTableEntity();
+        final String username = getPropertyUsername();
+        final String password = getPropertyPassword();
+        final String filterWhereCondition = getFilterWhereCondition(filterQueryObjects);
+        final String customWhereCondition = getCustomWhereCondition();
+        final String whereCondition;
+        if (customWhereCondition.isEmpty()) {
+            whereCondition = filterWhereCondition;
+        } else {
+            whereCondition = String.format("(%s) AND (%s)", filterWhereCondition, customWhereCondition);
+        }
+
         try {
-            StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity()));
 
-            if (!getPropertyString("sortBy").isEmpty()) {
-                addUrlParameter(url, "_sortBy", getPropertyString("sortBy"));
-            }
 
-            if (getPropertyNoFilterActive()) {
-                addUrlParameter(url, "_noActiveFilter", "true");
-            }
+            final DataListCollection<Map<String, String>> result = Arrays.stream(obService.get(baseUrl, tableEntity, username, password, whereCondition, sort, desc))
+                    .map(m -> m.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> String.valueOf(e.getValue()))))
+                    .collect(Collectors.toCollection(DataListCollection::new));
 
-            if (sort != null && !sort.isEmpty()) {
-                addUrlParameter(url, "_sortBy", sort);
-            }
-
-            if (start != null) {
-                addUrlParameter(url, "_startRow", String.valueOf(start));
-            }
-
-            if (rows != null) {
-                addUrlParameter(url, "_endRow", String.valueOf((start == null ? 0 : start) + rows));
-            }
-
-            final String filterWhereCondition = getFilterWhereCondition(filterQueryObjects);
-            final String customWhereCondition = getCustomWhereCondition();
-            final String whereCondition;
-            if (customWhereCondition.isEmpty()) {
-                whereCondition = filterWhereCondition;
-            } else {
-                whereCondition = String.format("(%s) AND (%s)", filterWhereCondition, customWhereCondition);
-            }
-            addUrlParameter(url, "_where", URLEncoder.encode(whereCondition));
-            final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
-            final HttpUriRequest request = getHttpRequest(url.toString(), "GET", headers);
-
-            // kirim request ke server
-            final HttpClient client = getHttpClient(isIgnoreCertificateError());
-            final HttpResponse response = client.execute(request);
-
-            final int statusCode = getResponseStatus(response);
-            if (getStatusGroupCode(statusCode) != 200) {
-                throw new OpenbravoClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
-            } else if (statusCode != 200) {
-                LogUtil.warn(getClassName(), "Response code [" + statusCode + "] is considered as success");
-            }
-
-            if (!isJsonResponse(response)) {
-                throw new OpenbravoClientException("Content type is not JSON");
-            }
-
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                final String responseBody = br.lines().collect(Collectors.joining());
-                final JSONObject jsonResponseBody = new JSONObject(responseBody);
-
-                return Optional.of(jsonResponseBody)
-                        .map(Try.onFunction(j -> j.getJSONObject("response")))
-                        .map(Try.onFunction(j -> j.getJSONArray("data")))
-                        .map(j -> JSONStream.of(j, Try.onBiFunction(JSONArray::getJSONObject)))
-                        .orElseGet(Stream::empty)
-                        .map(this::convertJson)
-                        .collect(Collectors.toCollection(DataListCollection::new));
-            }
-        } catch (IOException | OpenbravoClientException | JSONException e) {
+            return result;
+        } catch (OpenbravoClientException e) {
+            LogUtil.info(getClassName(), "getData : dataList [" + dataList.getId() + "]");
             LogUtil.error(getClassName(), e, e.getMessage());
             return null;
         }
@@ -123,56 +76,29 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
 
     @Override
     public int getDataTotalRowCount(DataList dataList, Map map, DataListFilterQueryObject[] filterQueryObjects) {
+        final OpenbravoService obService = OpenbravoService.getInstance();
+        obService.setDebug(isDebuging());
+        obService.setIgnoreCertificateError(isIgnoreCertificateError());
+        obService.setNoFilterActive(getPropertyNoFilterActive());
+
+        final String baseUrl = getPropertyBaseUrl();
+        final String tableEntity = getPropertyTableEntity();
+        final String username = getPropertyUsername();
+        final String password = getPropertyPassword();
+        final String filterWhereCondition = getFilterWhereCondition(filterQueryObjects);
+        final String customWhereCondition = getCustomWhereCondition();
+        final String whereCondition;
+        if (customWhereCondition.isEmpty()) {
+            whereCondition = filterWhereCondition;
+        } else {
+            whereCondition = String.format("(%s) AND (%s)", filterWhereCondition, customWhereCondition);
+        }
+
         try {
-            final StringBuilder url = new StringBuilder(getCountApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity()));
-            LogUtil.info(getClassName(), "new get total row count");
-//            addUrlParameter(url, "_selectedProperties", "id");
-
-            final int fetchLimit = getPropertyFetchLimit();
-            if (fetchLimit > 0) {
-                addUrlParameter(url, "_endRow", String.valueOf(fetchLimit));
-            }
-
-            if (getPropertyNoFilterActive()) {
-                addUrlParameter(url, "_noActiveFilter", "true");
-            }
-
-            final String filterWhereCondition = getFilterWhereCondition(filterQueryObjects);
-            final String customWhereCondition = getCustomWhereCondition();
-            final String whereCondition;
-            if (customWhereCondition.isEmpty()) {
-                whereCondition = filterWhereCondition;
-            } else {
-                whereCondition = String.format("(%s) AND (%s)", filterWhereCondition, customWhereCondition);
-            }
-            addUrlParameter(url, "_where", URLEncoder.encode(whereCondition));
-
-            final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
-            LogUtil.info(getClassName(), "getDataTotalRowCount url [" + url + "]");
-            final HttpUriRequest request = getHttpRequest(url.toString(), "GET", headers);
-
-            // kirim request ke server
-            final HttpClient client = getHttpClient(isIgnoreCertificateError());
-            final HttpResponse response = client.execute(request);
-
-            final int statusCode = getResponseStatus(response);
-            if (getStatusGroupCode(statusCode) != 200) {
-                throw new OpenbravoClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
-            } else if (statusCode != 200) {
-                LogUtil.warn(getClassName(), "Response code [" + statusCode + "] is considered as success");
-            }
-
-            if (!isJsonResponse(response)) {
-                throw new OpenbravoClientException("Content type is not JSON");
-            }
-
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                final String responseBody = br.lines().collect(Collectors.joining());
-                final JSONObject jsonResponseBody = new JSONObject(responseBody);
-                int totalRows = jsonResponseBody.getJSONObject("response").getInt("count");
-                return totalRows;
-            }
-        } catch (IOException | OpenbravoClientException | JSONException e) {
+            final int result = obService.count(baseUrl, tableEntity, username, password, whereCondition);
+            return result;
+        } catch (OpenbravoClientException e) {
+            LogUtil.info(getClassName(), "getDataTotalRowCount : dataList [" + dataList.getId() + "]");
             LogUtil.error(getClassName(), e, e.getMessage());
             return 0;
         }
@@ -227,29 +153,8 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         return AppUtil.processHashVariable(getPropertyString("password"), null, null, null);
     }
 
-    protected String getAuthenticationHeader(String username, String password) {
-        return "Basic " + Base64.getEncoder().encodeToString(String.format("%s:%s", username, password).getBytes());
-    }
-
-    protected String getApiEndPoint(String baseUrl, String tableEntity) {
-        return baseUrl + "/org.openbravo.service.json.jsonrest/" + tableEntity;
-    }
-
-    protected String getCountApiEndPoint(String baseUrl, String tableEntity) {
-        return baseUrl + "/ws/com.kinnarastudio.openbravo.kecakadapter.RecordCount/" + tableEntity;
-    }
-
-    protected Map<String, String> convertJson(JSONObject json) {
-        return JSONStream.of(json, Try.onBiFunction(JSONObject::getString))
-                .collect(Collectors.toMap(AbstractMap.SimpleImmutableEntry::getKey, AbstractMap.SimpleImmutableEntry::getValue));
-    }
-
     protected boolean getPropertyNoFilterActive() {
         return "true".equalsIgnoreCase(getPropertyString("noFilterActive"));
-    }
-
-    protected int getPropertyFetchLimit() {
-        return Integer.parseInt(getPropertyString("fetchLimit"));
     }
 
     protected String getFilterWhereCondition(DataListFilterQueryObject[] filterQueryObjects) {

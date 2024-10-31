@@ -129,7 +129,16 @@ public class OpenbravoService {
         }
     }
 
-    public Map<String, String>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, Map<String, String> filter) throws OpenbravoClientException {
+    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, Map<String, String> filter) throws OpenbravoClientException {
+        return get(baseUrl, tableEntity, username, password, filter, null, null);
+    }
+
+    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, Map<String, String> filter, @Nullable String sort, @Nullable Boolean desc) throws OpenbravoClientException {
+        final String where = getFilterWhereCondition(filter);
+        return get(baseUrl, tableEntity, username, password, where, sort, desc);
+    }
+
+    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String where, @Nullable String sort, @Nullable Boolean desc) throws OpenbravoClientException {
         LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "] password [" + (isDebug ? "*" : password) + "]");
 
         try {
@@ -137,41 +146,53 @@ public class OpenbravoService {
             restService.setIgnoreCertificate(ignoreCertificateError);
             restService.setDebug(isDebug);
 
-            final StringBuilder url = new StringBuilder().append(baseUrl).append("/org.openbravo.service.json.jsonrest/")
+            final StringBuilder url = new StringBuilder()
+                    .append(baseUrl)
+                    .append("/org.openbravo.service.json.jsonrest/")
                     .append(tableEntity);
 
             if (noFilterActive) {
                 addUrlParameter(url, "_noActiveFilter", "true");
             }
 
-            final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getAuthenticationHeader(username, password));
-            final HttpClient client = restService.getHttpClient();
 
-            if (!filter.isEmpty()) {
-                final String whereCondition = getFilterWhereCondition(filter);
-                addUrlParameter(url, "_where", URLEncoder.encode(whereCondition));
+            if (where != null && !where.isEmpty()) {
+                addUrlParameter(url, "_where", URLEncoder.encode(where));
             }
 
+            if (sort != null && !sort.isEmpty()) {
+                if (desc != null && desc) {
+                    sort += " desc";
+                }
+                addUrlParameter(url, "_sortBy", URLEncoder.encode(sort));
+            }
+
+            if (isDebug) {
+                LogUtil.info(getClass().getName(), "get : url [" + url + "]");
+            }
+
+            final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getAuthenticationHeader(username, password));
             final HttpUriRequest request = restService.getHttpRequest(url.toString(), headers);
 
+            final HttpClient client = restService.getHttpClient();
             final HttpResponse response = client.execute(request);
-
-            final int statusCode = restService.getResponseStatus(response);
-            if (restService.getStatusGroupCode(statusCode) != 200) {
-                throw new RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
-            } else if (statusCode != 200) {
-                LogUtil.warn(getClass().getName(), "Response code [" + statusCode + "] is considered as success");
-            }
-
-            if (!restService.isJsonResponse(response)) {
-                throw new RestClientException("Content type is not JSON");
-            }
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
                 final String responsePayload = br.lines().collect(Collectors.joining());
 
                 if (isDebug) {
                     LogUtil.info(getClass().getName(), "get : responsePayload [" + responsePayload + "]");
+                }
+
+                final int statusCode = restService.getResponseStatus(response);
+                if (restService.getStatusGroupCode(statusCode) != 200) {
+                    throw new RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
+                } else if (statusCode != 200) {
+                    LogUtil.warn(getClass().getName(), "Response code [" + statusCode + "] is considered as success");
+                }
+
+                if (!restService.isJsonResponse(response)) {
+                    throw new RestClientException("Content type is not JSON");
                 }
 
                 final JSONObject jsonResponse = new JSONObject(responsePayload)
@@ -184,9 +205,63 @@ public class OpenbravoService {
 
                 final JSONArray jsonData = jsonResponse.getJSONArray("data");
                 return JSONStream.of(jsonData, Try.onBiFunction(JSONArray::getJSONObject))
-                        .map(json -> JSONStream.of(json, Try.onBiFunction(JSONObject::getString))
+                        .map(json -> JSONStream.of(json, Try.onBiFunction(JSONObject::get))
                                 .collect(Collectors.toMap(JSONObjectEntry::getKey, JSONObjectEntry::getValue)))
                         .toArray(Map[]::new);
+            }
+        } catch (RestClientException | JSONException | IOException e) {
+            throw new OpenbravoClientException(e);
+        }
+    }
+
+    public int count(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String where) throws OpenbravoClientException {
+        final RestService restService = RestService.getInstance();
+        restService.setIgnoreCertificate(ignoreCertificateError);
+        restService.setDebug(isDebug);
+
+        try {
+            final StringBuilder url = new StringBuilder()
+                    .append(baseUrl)
+                    .append("/ws/com.kinnarastudio.openbravo.kecakadapter.RecordCount/")
+                    .append(tableEntity);
+
+            if (noFilterActive) {
+                addUrlParameter(url, "_noActiveFilter", "true");
+            }
+
+            if (where != null && !where.isEmpty()) {
+                addUrlParameter(url, "_where", URLEncoder.encode(where));
+            }
+
+            final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getAuthenticationHeader(username, password));
+            final HttpUriRequest request = restService.getHttpRequest(url.toString(), headers);
+
+            // kirim request ke server
+            final HttpClient client = restService.getHttpClient();
+            final HttpResponse response = client.execute(request);
+
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
+                final String responsePayload = br.lines().collect(Collectors.joining());
+
+                if (isDebug) {
+                    LogUtil.info(getClass().getName(), "count : responsePayload [" + responsePayload + "]");
+                }
+
+                final int statusCode = restService.getResponseStatus(response);
+                if (restService.getStatusGroupCode(statusCode) != 200) {
+                    throw new RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
+                } else if (statusCode != 200) {
+                    LogUtil.warn(getClass().getName(), "Response code [" + statusCode + "] is considered as success");
+                }
+
+                if (!restService.isJsonResponse(response)) {
+                    throw new RestClientException("Content type is not JSON");
+                }
+
+                final JSONObject jsonResponse = new JSONObject(responsePayload)
+                        .getJSONObject("response");
+
+                return jsonResponse.getInt("count");
             }
         } catch (RestClientException | JSONException | IOException e) {
             throw new OpenbravoClientException(e);
