@@ -8,6 +8,9 @@ import com.kinnarastudio.kecakplugins.openbravo.datalist.OpenbravoDeleteListData
 import com.kinnarastudio.kecakplugins.openbravo.datalist.OpenbravoRecordActivationDataListAction;
 import com.kinnarastudio.kecakplugins.openbravo.form.*;
 
+import com.kinnarastudio.kecakplugins.openbravo.hashvariable.OpenbravoCurrentUserVariable;
+import com.kinnarastudio.kecakplugins.openbravo.hashvariable.OpenbravoFindByName;
+import com.kinnarastudio.kecakplugins.openbravo.hashvariable.OpenbravoFindWhere;
 import com.kinnarastudio.kecakplugins.openbravo.process.OpenbravoTool;
 import com.kinnarastudio.kecakplugins.openbravo.webservice.OpenbravoProductPhotoWebService;
 import org.osgi.framework.BundleActivator;
@@ -21,15 +24,31 @@ public class Activator implements BundleActivator {
     public void start(BundleContext context) {
         registrationList = new ArrayList<ServiceRegistration>();
 
-        //Register plugin here
+        // Form Binders
         registrationList.add(context.registerService(OpenbravoFormBinder.class.getName(), new OpenbravoFormBinder(), null));
         registrationList.add(context.registerService(OpenbravoGridBinder.class.getName(), new OpenbravoGridBinder(), null));
-        registrationList.add(context.registerService(OpenbravoDataListBinder.class.getName(), new OpenbravoDataListBinder(), null));
-        registrationList.add(context.registerService(OpenbravoRecordActivationDataListAction.class.getName(), new OpenbravoRecordActivationDataListAction(), null));
+
+        // Form Options Binders
         registrationList.add(context.registerService(OpenbravoOptionsBinder.class.getName(), new OpenbravoOptionsBinder(), null));
+
+        // DataList Binders
+        registrationList.add(context.registerService(OpenbravoDataListBinder.class.getName(), new OpenbravoDataListBinder(), null));
+
+        // DataList Actions
+        registrationList.add(context.registerService(OpenbravoRecordActivationDataListAction.class.getName(), new OpenbravoRecordActivationDataListAction(), null));
         registrationList.add(context.registerService(OpenbravoDeleteListDataListAction.class.getName(), new OpenbravoDeleteListDataListAction(), null));
-        registrationList.add(context.registerService(OpenbravoProductPhotoWebService.class.getName(), new OpenbravoProductPhotoWebService(), null));
+
+        // Process Tools
         registrationList.add(context.registerService(OpenbravoTool.class.getName(), new OpenbravoTool(), null));
+
+        // Hash Variables
+        registrationList.add(context.registerService(OpenbravoCurrentUserVariable.class.getName(), new OpenbravoCurrentUserVariable(), null));
+        registrationList.add(context.registerService(OpenbravoFindWhere.class.getName(), new OpenbravoFindWhere(), null));
+        registrationList.add(context.registerService(OpenbravoFindByName.class.getName(), new OpenbravoFindByName(), null));
+
+        // Web Services
+        registrationList.add(context.registerService(OpenbravoProductPhotoWebService.class.getName(), new OpenbravoProductPhotoWebService(), null));
+
     }
 
     public void stop(BundleContext context) {
