@@ -66,11 +66,11 @@ public class RestService {
                 .orElseThrow(() -> new RestClientException("Error getting status code"));
     }
 
-    public boolean isJsonResponse(@Nonnull HttpResponse response) throws OpenbravoClientException {
+    public boolean isJsonResponse(@Nonnull HttpResponse response) throws RestClientException {
         return getResponseContentType(response).contains("json");
     }
 
-    public String getResponseContentType(@Nonnull HttpResponse response) throws OpenbravoClientException {
+    public String getResponseContentType(@Nonnull HttpResponse response) throws RestClientException {
         return Optional.of(response)
                 .map(HttpResponse::getEntity)
                 .map(HttpEntity::getContentType)
@@ -89,11 +89,11 @@ public class RestService {
         return status - (status % 100);
     }
 
-    public HttpUriRequest getHttpRequest(@Nonnull String url, @Nonnull Map<String, String> headers) throws OpenbravoClientException, RestClientException {
+    public HttpUriRequest getHttpRequest(@Nonnull String url, @Nonnull Map<String, String> headers) throws RestClientException {
         return getHttpRequest(url, "GET", headers, null);
     }
 
-    public HttpUriRequest getHttpRequest(@Nonnull String url, @Nonnull String method, @Nonnull Map<String, String> headers, @Nullable JSONObject bodyPayload) throws OpenbravoClientException, RestClientException {
+    public HttpUriRequest getHttpRequest(@Nonnull String url, @Nonnull String method, @Nonnull Map<String, String> headers, @Nullable JSONObject bodyPayload) throws RestClientException {
         if (isDebug) {
             LogUtil.info(getClass().getName(), "getHttpRequest url [" + url + "] method [" + method + "] bodyPayload [" + bodyPayload + "]");
         }
@@ -128,7 +128,7 @@ public class RestService {
         return request;
     }
 
-    protected String getAuthenticationHeader(String username, String password) {
+    public String getAuthenticationHeader(String username, String password) {
         return "Basic " + Base64.getEncoder().encodeToString(String.format("%s:%s", username, password).getBytes());
     }
 

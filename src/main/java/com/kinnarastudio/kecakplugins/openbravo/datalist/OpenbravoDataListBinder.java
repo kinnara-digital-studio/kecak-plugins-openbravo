@@ -44,12 +44,12 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         final OpenbravoService obService = OpenbravoService.getInstance();
         obService.setDebug(isDebuging());
         obService.setIgnoreCertificateError(isIgnoreCertificateError());
-        obService.setNoFilterActive(getPropertyNoFilterActive());
+        obService.setNoFilterActive(isNoFilterActive());
 
-        final String baseUrl = getPropertyBaseUrl();
-        final String tableEntity = getPropertyTableEntity();
-        final String username = getPropertyUsername();
-        final String password = getPropertyPassword();
+        final String baseUrl = getBaseUrl();
+        final String tableEntity = getTableEntity();
+        final String username = getUsername();
+        final String password = getPassword();
         final String filterWhereCondition = getFilterWhereCondition(filterQueryObjects);
         final String customWhereCondition = getCustomWhereCondition();
         final String whereCondition;
@@ -60,8 +60,6 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         }
 
         try {
-
-
             final DataListCollection<Map<String, String>> result = Arrays.stream(obService.get(baseUrl, tableEntity, username, password, whereCondition, sort, desc))
                     .map(m -> m.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> String.valueOf(e.getValue()))))
                     .collect(Collectors.toCollection(DataListCollection::new));
@@ -79,12 +77,12 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         final OpenbravoService obService = OpenbravoService.getInstance();
         obService.setDebug(isDebuging());
         obService.setIgnoreCertificateError(isIgnoreCertificateError());
-        obService.setNoFilterActive(getPropertyNoFilterActive());
+        obService.setNoFilterActive(isNoFilterActive());
 
-        final String baseUrl = getPropertyBaseUrl();
-        final String tableEntity = getPropertyTableEntity();
-        final String username = getPropertyUsername();
-        final String password = getPropertyPassword();
+        final String baseUrl = getBaseUrl();
+        final String tableEntity = getTableEntity();
+        final String username = getUsername();
+        final String password = getPassword();
         final String filterWhereCondition = getFilterWhereCondition(filterQueryObjects);
         final String customWhereCondition = getCustomWhereCondition();
         final String whereCondition;
@@ -137,23 +135,23 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         return AppUtil.readPluginResource(getClassName(), "/properties/datalist/OpenbravoDataListBinder.json", null, false, "/messages/Openbravo");
     }
 
-    protected String getPropertyBaseUrl() {
+    protected String getBaseUrl() {
         return AppUtil.processHashVariable(getPropertyString("baseUrl"), null, null, null);
     }
 
-    protected String getPropertyTableEntity() {
+    protected String getTableEntity() {
         return AppUtil.processHashVariable(getPropertyString("tableEntity"), null, null, null);
     }
 
-    protected String getPropertyUsername() {
+    protected String getUsername() {
         return AppUtil.processHashVariable(getPropertyString("username"), null, null, null);
     }
 
-    protected String getPropertyPassword() {
+    protected String getPassword() {
         return AppUtil.processHashVariable(getPropertyString("password"), null, null, null);
     }
 
-    protected boolean getPropertyNoFilterActive() {
+    protected boolean isNoFilterActive() {
         return "true".equalsIgnoreCase(getPropertyString("noFilterActive"));
     }
 
