@@ -139,6 +139,10 @@ public class OpenbravoService {
     }
 
     public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String where, @Nullable String sort, @Nullable Boolean desc) throws OpenbravoClientException {
+        return get(baseUrl, tableEntity, username, password, null, where, sort, desc);
+    }
+
+    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String[] fields, @Nullable String where, @Nullable String sort, @Nullable Boolean desc) throws OpenbravoClientException {
         LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "] password [" + (isDebug ? "*" : password) + "]");
 
         try {
@@ -150,6 +154,10 @@ public class OpenbravoService {
                     .append(baseUrl)
                     .append("/org.openbravo.service.json.jsonrest/")
                     .append(tableEntity);
+
+            if(fields != null && fields.length > 0) {
+                addUrlParameter(url, "_selectedProperties", String.join(",", fields));
+            }
 
             if (noFilterActive) {
                 addUrlParameter(url, "_noActiveFilter", "true");
