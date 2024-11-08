@@ -66,8 +66,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
 
             return result;
         } catch (OpenbravoClientException e) {
-            LogUtil.info(getClassName(), "getData : dataList [" + dataList.getId() + "]");
-            LogUtil.error(getClassName(), e, e.getMessage());
+            LogUtil.error(getClassName(), e, "getData : dataList [" + Optional.ofNullable(dataList).map(DataList::getId).orElse("") + "]");
             return null;
         }
     }
