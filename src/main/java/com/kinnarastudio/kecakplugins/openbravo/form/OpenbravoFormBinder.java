@@ -71,10 +71,10 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
                 final JSONObject jsonResponseBody = new JSONObject(br.lines().collect(Collectors.joining()));
-                final FormRowSet rowSet = new FormRowSet();
-                final FormRow row = convertJson(jsonResponseBody);
-                rowSet.add(row);
-                return rowSet;
+                return new FormRowSet() {{
+                    final FormRow row = convertJson(jsonResponseBody);
+                    add(row);
+                }};
             }
         } catch (OpenbravoClientException | IOException | JSONException e) {
             LogUtil.error(getClassName(), e, e.getMessage());
@@ -131,7 +131,7 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
             final FormRow result = Arrays.stream(obService.post(getPropertyBaseUrl(), tableEntity, getPropertyUsername(), getPropertyPassword(), new Map[]{row}))
                     .map(Map<String, Object>::entrySet)
                     .flatMap(Collection::stream)
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (accept, reject) -> accept, FormRow::new));
+                    .collect(Collectors.toMap(e -> e.getKey().replaceAll("[^a-zA-Z0-9_]", ""), Map.Entry::getValue, (accept, reject) -> accept, FormRow::new));
 
             FormRowSet resultRowSet = new FormRowSet() {{
                 add(result);
@@ -209,7 +209,7 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
 
     protected FormRow convertJson(JSONObject json) {
         return JSONStream.of(json, Try.onBiFunction(JSONObject::getString))
-                .collect(FormRow::new, (row, e) -> row.setProperty(e.getKey(), e.getValue()), FormRow::putAll);
+                .collect(FormRow::new, (row, e) -> row.setProperty(e.getKey().replaceAll("[^a-zA-Z0-9_]", ""), e.getValue()), FormRow::putAll);
     }
 
     protected boolean getPropertyNoFilterActive() {

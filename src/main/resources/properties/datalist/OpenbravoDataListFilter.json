@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Openbravo DataList Filter",
+    "properties": [
+      {
+        "name": "operator",
+        "label": "Operator",
+        "type": "radio",
+        "value": "AND",
+        "required": "true",
+        "options": [
+          {
+            "value": "AND",
+            "label": "@@openbravo.and@@"
+          },
+          {
+            "value": "OR",
+            "label": "@@openbravo.or@@"
+          }
+        ]
+      },
+      {
+        "name": "query",
+        "label": "@@openbravo.query@@",
+        "type": "textarea",
+        "description": "@@openbravo.query.desc@@",
+        "required": "true",
+        "value": "$ LIKE '%' || ? || '%'"
+      }
+    ]
+  }
+]

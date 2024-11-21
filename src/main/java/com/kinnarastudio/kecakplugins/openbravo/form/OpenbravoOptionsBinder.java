@@ -53,14 +53,14 @@ public class OpenbravoOptionsBinder extends FormBinder implements FormLoadOption
 
                 final FormRowSet rowSet = JSONStream.of(jsonData, Try.onBiFunction(JSONArray::getJSONObject))
                         .map(Try.onFunction(t -> {
-                            FormRow formRow = new FormRow();
+                            FormRow row = new FormRow();
                             final String value = t.getString(getPropertyString("valueColumn"));
                             final String label = t.getString(getPropertyString("labelColumn"));
 
-                            formRow.setProperty("value", value);
-                            formRow.setProperty("label", label.isEmpty() ? value : label);
+                            row.setProperty("value", value);
+                            row.setProperty("label", label.isEmpty() ? value : label);
 
-                            return formRow;
+                            return row;
                         }))
                         .filter(Objects::nonNull)
                         .collect(Collectors.toCollection(FormRowSet::new));

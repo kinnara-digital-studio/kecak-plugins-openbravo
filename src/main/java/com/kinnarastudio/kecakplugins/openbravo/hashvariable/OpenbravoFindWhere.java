@@ -46,7 +46,7 @@ public class OpenbravoFindWhere extends DefaultHashVariablePlugin {
             obService.setDebug(isDebug);
             obService.setIgnoreCertificateError(getIgnoreCertificateError());
 
-            final Map<String, Object>[] result = obService.get(baseUrl, tableEntity, username, password, new String[] {field}, where, null, null);
+            final Map<String, Object>[] result = obService.get(baseUrl, tableEntity, username, password, new String[] {field}, where, null, null, null, null, 1);
             final String value = Optional.ofNullable(result)
                     .stream()
                     .flatMap(Arrays::stream)

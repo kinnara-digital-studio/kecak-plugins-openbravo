@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URLEncoder;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class OpenbravoService {
@@ -130,19 +132,19 @@ public class OpenbravoService {
     }
 
     public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, Map<String, String> filter) throws OpenbravoClientException {
-        return get(baseUrl, tableEntity, username, password, filter, null, null);
+        return get(baseUrl, tableEntity, username, password, filter, null, null, null, null);
     }
 
-    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, Map<String, String> filter, @Nullable String sort, @Nullable Boolean desc) throws OpenbravoClientException {
+    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, Map<String, String> filter, @Nullable String sort, @Nullable Boolean desc, @Nullable Integer start, @Nullable Integer end) throws OpenbravoClientException {
         final String where = getFilterWhereCondition(filter);
-        return get(baseUrl, tableEntity, username, password, where, sort, desc);
+        return get(baseUrl, tableEntity, username, password, where, null, sort, desc, start, end);
     }
 
-    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String where, @Nullable String sort, @Nullable Boolean desc) throws OpenbravoClientException {
-        return get(baseUrl, tableEntity, username, password, null, where, sort, desc);
+    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String condition, @Nullable Object[] arguments, @Nullable String sort, @Nullable Boolean desc, @Nullable Integer start, @Nullable Integer end) throws OpenbravoClientException {
+        return get(baseUrl, tableEntity, username, password, null, condition, arguments, sort, desc, start, end);
     }
 
-    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String[] fields, @Nullable String where, @Nullable String sort, @Nullable Boolean desc) throws OpenbravoClientException {
+    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String[] fields, @Nullable String condition, Object[] arguments, @Nullable String sort, @Nullable Boolean desc, @Nullable Integer start, @Nullable Integer end) throws OpenbravoClientException {
         LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "] password [" + (isDebug ? "*" : password) + "]");
 
         try {
@@ -163,8 +165,36 @@ public class OpenbravoService {
                 addUrlParameter(url, "_noActiveFilter", "true");
             }
 
+            if(start != null) {
+                addUrlParameter(url, "_startRow", start.toString());
+            }
 
-            if (where != null && !where.isEmpty()) {
+            if(end != null) {
+                addUrlParameter(url, "_endRow", end.toString());
+            }
+
+            if (condition != null && !condition.isEmpty()) {
+//                final Pattern p = Pattern.compile("\\?");
+//                final Matcher m = p.matcher(condition);
+//                final StringBuilder sb = new StringBuilder();
+//                for (int i = 0; m.find(); i++) {
+//                    final Object argument = arguments[i];
+//
+//                    final String replacement;
+//                    if(argument instanceof Integer || argument instanceof Long) {
+//                        replacement = "%d";
+//                    } else if(argument instanceof Float || argument instanceof Double) {
+//                        replacement = "%f";
+//                    } else if(argument instanceof Date) {
+//                        replacement = "TO_DATE('%s', 'YYYY-MM-DD')";
+//                    } else {
+//                        replacement = "'%s'";
+//                    }
+//
+//                    m.appendReplacement(sb, replacement);
+//                }
+
+                final String where = arguments == null ? condition : String.format(condition.replaceAll("\\?", "'%s'"), arguments);
                 addUrlParameter(url, "_where", URLEncoder.encode(where));
             }
 
@@ -172,7 +202,7 @@ public class OpenbravoService {
                 if (desc != null && desc) {
                     sort += " desc";
                 }
-                addUrlParameter(url, "_sortBy", URLEncoder.encode(sort));
+                addUrlParameter(url, "", URLEncoder.encode(sort));
             }
 
             if (isDebug) {

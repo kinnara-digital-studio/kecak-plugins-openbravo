@@ -2,6 +2,7 @@ package com.kinnarastudio.kecakplugins.openbravo.datalist;
 
 import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
+import com.kinnarastudio.kecakplugins.openbravo.model.OpenbravoDataListQueryObject;
 import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.model.*;
@@ -60,7 +61,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         }
 
         try {
-            final DataListCollection<Map<String, String>> result = Arrays.stream(obService.get(baseUrl, tableEntity, username, password, whereCondition, sort, desc))
+            final DataListCollection<Map<String, String>> result = Arrays.stream(obService.get(baseUrl, tableEntity, username, password, whereCondition, null, sort, desc, start, rows))
                     .map(m -> m.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> String.valueOf(e.getValue()))))
                     .collect(Collectors.toCollection(DataListCollection::new));
 
@@ -155,30 +156,37 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
     }
 
     protected String getFilterWhereCondition(DataListFilterQueryObject[] filterQueryObjects) {
-        final Pattern p = Pattern.compile("\\?");
         String whereCondition = Optional.ofNullable(filterQueryObjects)
                 .stream()
                 .flatMap(Arrays::stream)
+                .filter(Objects::nonNull)
+                .filter(f -> f.getQuery() != null && !f.getQuery().isEmpty())
                 .map(filterQueryObject -> {
                     final String operator = ifEmptyThen(filterQueryObject.getOperator(), "AND");
-                    final String query = filterQueryObject.getQuery().replaceAll("\\$_identifier", "\\.name");
-                    final String[] values = filterQueryObject.getValues();
-
-                    final StringBuilder condition = new StringBuilder();
-                    final Matcher m = p.matcher(query);
-                    int i = 0;
-                    while (m.find()) {
-                        if (i < values.length) {
-                            m.appendReplacement(condition, "'" + values[i] + "'");
-                        }
-                        i++;
-                    }
-                    m.appendTail(condition);
+                    final String query = filterQueryObject instanceof OpenbravoDataListQueryObject ? filterQueryObject.getQuery() : filterQueryObject.getQuery().replaceAll("\\$_identifier", ".name");
+                    final StringBuilder condition = getCondition(filterQueryObject, query);
 
                     return operator + " " + condition;
                 })
                 .collect(Collectors.joining(" ", "1=1 ", ""));
         return whereCondition;
+    }
+
+    protected StringBuilder getCondition(DataListFilterQueryObject filterQueryObject, String query) {
+        final Pattern p = Pattern.compile("\\?");
+        final String[] values = filterQueryObject.getValues();
+
+        final StringBuilder condition = new StringBuilder();
+        final Matcher m = p.matcher(query);
+        int i = 0;
+        while (m.find()) {
+            if (i < values.length) {
+                m.appendReplacement(condition, "'" + values[i] + "'");
+            }
+            i++;
+        }
+        m.appendTail(condition);
+        return condition;
     }
 
     protected String getCustomWhereCondition() {

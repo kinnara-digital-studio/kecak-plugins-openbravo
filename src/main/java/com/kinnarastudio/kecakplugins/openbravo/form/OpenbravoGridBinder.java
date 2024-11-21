@@ -34,7 +34,7 @@ public class OpenbravoGridBinder extends FormBinder
             return Arrays.stream(obService.get(getBaseUrl(), getTableEntity(), getUsername(), getPassword(), filter))
                     .map(m -> m.entrySet()
                             .stream()
-                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (accept, ignore) -> accept, FormRow::new)))
+                            .collect(Collectors.toMap(e -> e.getKey().replaceAll("[^a-zA-Z0-9_]", ""), Map.Entry::getValue, (accept, ignore) -> accept, FormRow::new)))
                     .collect(Collectors.toCollection(() -> new FormRowSet() {{
                         setMultiRow(true);
                     }}));

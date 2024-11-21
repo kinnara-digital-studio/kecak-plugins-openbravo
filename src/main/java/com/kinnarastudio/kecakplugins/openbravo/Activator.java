@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import com.kinnarastudio.kecakplugins.openbravo.datalist.OpenbravoDataListBinder;
+import com.kinnarastudio.kecakplugins.openbravo.datalist.OpenbravoDataListFilter;
 import com.kinnarastudio.kecakplugins.openbravo.datalist.OpenbravoDeleteListDataListAction;
 import com.kinnarastudio.kecakplugins.openbravo.datalist.OpenbravoRecordActivationDataListAction;
 import com.kinnarastudio.kecakplugins.openbravo.form.*;
@@ -33,6 +34,10 @@ public class Activator implements BundleActivator {
 
         // DataList Binders
         registrationList.add(context.registerService(OpenbravoDataListBinder.class.getName(), new OpenbravoDataListBinder(), null));
+
+        // DataList Filters
+        registrationList.add(context.registerService(OpenbravoDataListFilter.class.getName(), new OpenbravoDataListFilter(), null));
+
 
         // DataList Actions
         registrationList.add(context.registerService(OpenbravoRecordActivationDataListAction.class.getName(), new OpenbravoRecordActivationDataListAction(), null));
