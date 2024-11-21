@@ -33,7 +33,6 @@ public class OpenbravoDataListFilter extends TextFieldDataListFilterType {
                 .filter(s -> !s.isEmpty())
                 .toArray(String[]::new);
 
-        LogUtil.info(getClassName(), "arguments [" + String.join(";", arguments) + "]");
         if (arguments.length > 0) {
             return new OpenbravoDataListQueryObject() {{
                 final String escapedName = StringUtil.escapeRegex(name);
