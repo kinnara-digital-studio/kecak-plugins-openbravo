@@ -95,7 +95,7 @@ public class RestService {
 
     public HttpUriRequest getHttpRequest(@Nonnull String url, @Nonnull String method, @Nonnull Map<String, String> headers, @Nullable JSONObject bodyPayload) throws RestClientException {
         if (isDebug) {
-            LogUtil.info(getClass().getName(), "getHttpRequest url [" + url + "] method [" + method + "] bodyPayload [" + bodyPayload + "]");
+            LogUtil.info(getClass().getName(), "getHttpRequest : url [" + url + "] method [" + method + "] bodyPayload [" + bodyPayload + "]");
         }
 
         @Nullable HttpEntity httpEntity;

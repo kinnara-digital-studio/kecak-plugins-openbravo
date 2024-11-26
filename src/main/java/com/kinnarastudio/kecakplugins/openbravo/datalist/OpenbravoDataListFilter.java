@@ -5,6 +5,7 @@ import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.lib.TextFieldDataListFilterType;
 import org.joget.apps.datalist.model.DataList;
 import org.joget.apps.datalist.model.DataListFilterQueryObject;
+import org.joget.commons.util.LogUtil;
 import org.joget.commons.util.StringUtil;
 import org.joget.plugin.base.PluginManager;
 
@@ -21,7 +22,10 @@ public class OpenbravoDataListFilter extends TextFieldDataListFilterType {
 
     @Override
     public DataListFilterQueryObject getQueryObject(DataList datalist, String name) {
-        if (getValue(datalist, name) == null) {
+        final String value = getValue(datalist, name);
+        LogUtil.info(getClassName(), "value [" + value + "] [" + getPropertyString("defaultValue") + "]");
+
+        if (value == null) {
             return null;
         }
 
@@ -32,10 +36,15 @@ public class OpenbravoDataListFilter extends TextFieldDataListFilterType {
                 .filter(s -> !s.isEmpty())
                 .toArray(String[]::new);
 
+        LogUtil.info(getClassName(), "arguments [" + String.join(";", arguments) + "]");
+
         if (arguments.length > 0) {
             return new OpenbravoDataListQueryObject() {{
                 final String escapedName = StringUtil.escapeRegex(name);
                 final String query = OpenbravoDataListFilter.this.getCondition().replaceAll("(^\\$\\B)|(\\B\\$\\B)|(\\B\\$$)", escapedName);
+
+                LogUtil.info(getClassName(), "query [" + query + "]");
+
                 setQuery(query);
                 setValues(arguments);
                 setDatalist(datalist);

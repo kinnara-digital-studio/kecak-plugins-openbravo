@@ -32,22 +32,22 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URLEncoder;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class OpenbravoService {
+    public final static DateFormat DF = new SimpleDateFormat("yyyy-MM-dd");
+
     private static OpenbravoService instance = null;
-
+    OpenbravoClientException cutCircuitCause = null;
     private boolean ignoreCertificateError = false;
-
     private boolean isDebug = false;
-
     private boolean shortCircuit = false;
-
     private boolean noFilterActive = false;
-
     private boolean cutCircuit = false;
 
     private OpenbravoService() {
@@ -132,16 +132,8 @@ public class OpenbravoService {
     }
 
     public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, Map<String, String> filter) throws OpenbravoClientException {
-        return get(baseUrl, tableEntity, username, password, filter, null, null, null, null);
-    }
-
-    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, Map<String, String> filter, @Nullable String sort, @Nullable Boolean desc, @Nullable Integer start, @Nullable Integer end) throws OpenbravoClientException {
         final String where = getFilterWhereCondition(filter);
-        return get(baseUrl, tableEntity, username, password, where, null, sort, desc, start, end);
-    }
-
-    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String condition, @Nullable Object[] arguments, @Nullable String sort, @Nullable Boolean desc, @Nullable Integer start, @Nullable Integer end) throws OpenbravoClientException {
-        return get(baseUrl, tableEntity, username, password, null, condition, arguments, sort, desc, start, end);
+        return get(baseUrl, tableEntity, username, password, null, where, null, null, null, null, null);
     }
 
     public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String[] fields, @Nullable String condition, Object[] arguments, @Nullable String sort, @Nullable Boolean desc, @Nullable Integer start, @Nullable Integer end) throws OpenbravoClientException {
@@ -157,7 +149,7 @@ public class OpenbravoService {
                     .append("/org.openbravo.service.json.jsonrest/")
                     .append(tableEntity);
 
-            if(fields != null && fields.length > 0) {
+            if (fields != null && fields.length > 0) {
                 addUrlParameter(url, "_selectedProperties", String.join(",", fields));
             }
 
@@ -165,36 +157,17 @@ public class OpenbravoService {
                 addUrlParameter(url, "_noActiveFilter", "true");
             }
 
-            if(start != null) {
+            if (start != null) {
                 addUrlParameter(url, "_startRow", start.toString());
             }
 
-            if(end != null) {
+            if (end != null) {
                 addUrlParameter(url, "_endRow", end.toString());
             }
 
             if (condition != null && !condition.isEmpty()) {
-//                final Pattern p = Pattern.compile("\\?");
-//                final Matcher m = p.matcher(condition);
-//                final StringBuilder sb = new StringBuilder();
-//                for (int i = 0; m.find(); i++) {
-//                    final Object argument = arguments[i];
-//
-//                    final String replacement;
-//                    if(argument instanceof Integer || argument instanceof Long) {
-//                        replacement = "%d";
-//                    } else if(argument instanceof Float || argument instanceof Double) {
-//                        replacement = "%f";
-//                    } else if(argument instanceof Date) {
-//                        replacement = "TO_DATE('%s', 'YYYY-MM-DD')";
-//                    } else {
-//                        replacement = "'%s'";
-//                    }
-//
-//                    m.appendReplacement(sb, replacement);
-//                }
-
-                final String where = arguments == null ? condition : String.format(condition.replaceAll("\\?", "'%s'"), arguments);
+                final String where = arguments == null ? condition : formatArguments(condition, arguments);
+                LogUtil.info(OpenbravoService.class.getName(), "_where [" + where + "]");
                 addUrlParameter(url, "_where", URLEncoder.encode(where));
             }
 
@@ -250,6 +223,40 @@ public class OpenbravoService {
         } catch (RestClientException | JSONException | IOException e) {
             throw new OpenbravoClientException(e);
         }
+    }
+
+    protected String formatArguments(String condition, Object[] arguments) {
+        final Pattern p = Pattern.compile("\\?");
+        final Matcher m = p.matcher(condition);
+
+        final StringBuilder sb = new StringBuilder();
+        final List<Object> args = new ArrayList<>();
+        if(arguments != null) {
+            for (int i = 0; i < arguments.length && m.find(); i++) {
+                final Object argument = arguments[i];
+
+                final String replacement;
+                if (argument instanceof Integer || argument instanceof Long) {
+                    replacement = "%d";
+                    args.add(argument);
+                } else if (argument instanceof Float || argument instanceof Double) {
+                    replacement = "%.2f";
+                    args.add(argument);
+                } else if (argument instanceof Date) {
+                    replacement = "'%s'";
+                    args.add(DF.format(argument));
+                } else {
+                    replacement = "'%s'";
+                    args.add(argument);
+                }
+
+                m.appendReplacement(sb, replacement);
+            }
+        }
+
+        m.appendTail(sb);
+
+        return String.format(sb.toString(), args.toArray(new Object[0]));
     }
 
     public int count(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String where) throws OpenbravoClientException {
@@ -325,7 +332,6 @@ public class OpenbravoService {
 
             cutCircuit = false;
 
-
             final Map[] result = Arrays.stream(rows)
                     .map(row -> {
                         if (cutCircuit) return null;
@@ -366,6 +372,8 @@ public class OpenbravoService {
                                         final Map<String, String> errors = JSONStream.of(jsonErrors, Try.onBiFunction(JSONObject::getString))
                                                 .collect(Collectors.toUnmodifiableMap(JSONObjectEntry::getKey, JSONObjectEntry::getValue));
                                         throw new OpenbravoClientException(errors);
+                                    } else if (status == -1) {
+                                        throw new OpenbravoClientException(jsonResponse.getJSONObject("error").getString("message"));
                                     } else {
                                         throw new OpenbravoClientException(responsePayload);
                                     }
@@ -388,14 +396,19 @@ public class OpenbravoService {
                             LogUtil.error(getClass().getName(), e, e.getMessage());
                             if (shortCircuit) {
                                 cutCircuit = true;
+                                cutCircuitCause = new OpenbravoClientException("Circuit cut", e);
                                 return null;
                             }
 
-                            return Collections.<String, String>emptyMap();
+                            return Collections.<String, Object>emptyMap();
                         }
                     })
                     .filter(Objects::nonNull)
                     .toArray(Map[]::new);
+
+            if (cutCircuit) {
+                throw cutCircuitCause;
+            }
 
             if (rows.length != result.length)
                 throw new OpenbravoClientException("Request length [" + rows.length + "] and response length [" + result.length + "] are different");
@@ -499,4 +512,5 @@ public class OpenbravoService {
             throw new OpenbravoClientException("");
         }
     }
+
 }

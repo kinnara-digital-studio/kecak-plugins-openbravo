@@ -123,7 +123,7 @@ public class OpenbravoTool extends DefaultApplicationPlugin {
 
     @Override
     public String getPropertyOptions() {
-        return AppUtil.readPluginResource(getClassName(), "/properties/process/OpenbravoTool.json");
+        return AppUtil.readPluginResource(getClassName(), "/properties/process/OpenbravoTool.json", null, true, "/messages/Openbravo");
     }
 
     public String getDataListId() {

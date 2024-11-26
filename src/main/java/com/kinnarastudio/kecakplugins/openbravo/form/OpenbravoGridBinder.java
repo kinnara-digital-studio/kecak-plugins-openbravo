@@ -48,6 +48,8 @@ public class OpenbravoGridBinder extends FormBinder
     public FormRowSet store(Element element, FormRowSet rowSet, FormData formData) {
         final boolean isDebugging = isDebugging();
 
+        final Form parentForm = FormUtil.findRootForm(element);
+
         try {
             final OpenbravoService obService = OpenbravoService.getInstance();
             obService.setDebug(isDebugging);
@@ -55,7 +57,6 @@ public class OpenbravoGridBinder extends FormBinder
             obService.setShortCircuit(false);
             obService.setNoFilterActive(isNoFilterActive());
 
-            Form parentForm = FormUtil.findRootForm(element);
             FormStoreBinder parentStoreBinder = parentForm.getStoreBinder();
             FormRowSet storeBinderData = formData.getStoreBinderData(parentStoreBinder);
             FormRowSet parentRowSet = parentStoreBinder.store(parentForm, storeBinderData, formData);
@@ -109,13 +110,13 @@ public class OpenbravoGridBinder extends FormBinder
 
             final Map<String, Object>[] result = obService.post(getBaseUrl(), getTableEntity(), getUsername(), getPassword(), rows);
             return Arrays.stream(result)
-                    .map(m -> m.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, i) -> a, FormRow::new)))
+                    .map(m -> m.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (accept, ignore) -> accept, FormRow::new)))
                     .collect(Collectors.toCollection(FormRowSet::new));
         } catch (OpenbravoClientException e) {
             final Map<String, String> errors = e.getErrors();
             errors.forEach((field, message) -> LogUtil.warn(getClassName(), message));
             errors.forEach(formData::addFormError);
-
+            
             LogUtil.error(getClassName(), e, e.getMessage());
             return null;
         }
@@ -151,7 +152,7 @@ public class OpenbravoGridBinder extends FormBinder
 
     @Override
     public String getPropertyOptions() {
-        return AppUtil.readPluginResource(getClassName(), "/properties/form/OpenbravoGridBinder.json");
+        return AppUtil.readPluginResource(getClassName(), "/properties/form/OpenbravoGridBinder.json", null, true, "/messages/Openbravo");
     }
 
     public String getBaseUrl() {

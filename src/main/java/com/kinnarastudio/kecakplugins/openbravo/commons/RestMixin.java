@@ -5,8 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.commons.jsonstream.JSONCollectors;
+import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -83,6 +83,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
 
     /**
      * Get property "headers"
+     *
      * @return
      */
     default Map<String, String> getPropertyHeaders() {
@@ -121,11 +122,11 @@ public interface RestMixin extends PropertyEditable, Unclutter {
     default List<Map<String, String>> getParameters() {
         return Optional.of("parameters")
                 .map(this::getProperty)
-                .map(o -> (Object[])o)
+                .map(o -> (Object[]) o)
                 .map(Arrays::stream)
                 .orElseGet(Stream::empty)
                 .filter(Objects::nonNull)
-                .map(o -> (Map<String, String>)o)
+                .map(o -> (Map<String, String>) o)
                 .collect(Collectors.toList());
     }
 
@@ -148,7 +149,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
         String url = AppUtil.processHashVariable(getPropertyString("url"), assignment, null, null);
         String parameter = getParameterString(assignment).trim();
 
-        if(!parameter.isEmpty()) {
+        if (!parameter.isEmpty()) {
             url += (url.trim().matches("https?://.+\\?.*") ? "&" : "?") + parameter;
         }
 
@@ -158,24 +159,24 @@ public interface RestMixin extends PropertyEditable, Unclutter {
 
     @Nonnull
     default Map<String, String> getPropertyFormData(WorkflowAssignment assignment) {
-        return getKeyValueProperty(assignment,"formData");
+        return getKeyValueProperty(assignment, "formData");
     }
 
     /**
      * Get grid property that contains "key" and "value"
      *
-     * @param assignment WorkflowAssignment
+     * @param assignment   WorkflowAssignment
      * @param propertyName String
      * @return
      */
     default Map<String, String> getKeyValueProperty(WorkflowAssignment assignment, String propertyName) {
         return Optional.of(propertyName)
                 .map(this::getProperty)
-                .map(o -> (Object[])o)
+                .map(o -> (Object[]) o)
                 .map(Arrays::stream)
                 .orElse(Stream.empty())
                 .filter(Objects::nonNull)
-                .map(o -> (Map<String, String>)o)
+                .map(o -> (Map<String, String>) o)
                 .collect(Collectors.toMap(
                         m -> processHashVariable(m.getOrDefault("key", ""), assignment),
                         m -> processHashVariable(m.getOrDefault("value", ""), assignment)));
@@ -219,14 +220,14 @@ public interface RestMixin extends PropertyEditable, Unclutter {
     /**
      * Get JSON request body
      *
-     * @param entity String
+     * @param entity     String
      * @param assignment WorkflowAssignment
      * @return
      * @throws OpenbravoClientException
      */
     default HttpEntity getJsonRequestEntity(String entity, @Nullable WorkflowAssignment assignment) throws OpenbravoClientException {
         final String body = AppUtil.processHashVariable(entity, assignment, null, null);
-        if(isJsonObject(body) || isJsonArray(body)) {
+        if (isJsonObject(body) || isJsonArray(body)) {
             return new StringEntity(body, ContentType.APPLICATION_JSON);
         } else {
             throw new OpenbravoClientException("Invalid json : " + entity);
@@ -247,7 +248,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
             try {
                 return new JSONArray(inputString).toString();
             } catch (JSONException jsonArrayException) {
-                if(isDebuging()) {
+                if (isDebuging()) {
                     throw new OpenbravoClientException("Invalid json : " + inputString);
                 } else {
                     throw new OpenbravoClientException("Invalid json");
@@ -334,7 +335,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
 
     default HttpUriRequest getHttpRequest(@Nullable WorkflowAssignment assignment, String url, String method, Map<String, String> headers, @Nonnull FormRow row) throws OpenbravoClientException {
         @Nullable HttpEntity httpEntity;
-        if("GET".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method)) {
+        if ("GET".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method)) {
             httpEntity = null;
         } else {
             try {
@@ -347,7 +348,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
                 final JSONObject jsonRequest = new JSONObject();
                 jsonRequest.put("data", jsonData);
 
-                LogUtil.info(getClassName(), "jsonData : ["+jsonData+"]");
+                LogUtil.info(getClassName(), "jsonData : [" + jsonData + "]");
                 httpEntity = getJsonRequestEntity(jsonRequest.toString(), assignment);
             } catch (JSONException e) {
                 throw new OpenbravoClientException(e);
@@ -370,13 +371,13 @@ public interface RestMixin extends PropertyEditable, Unclutter {
     default HttpUriRequest getHttpRequest(WorkflowAssignment assignment, String url, String method, Map<String, String> headers, @Nullable HttpEntity httpEntity) throws OpenbravoClientException {
         final HttpRequestBase request;
 
-        if("GET".equals(method)) {
+        if ("GET".equals(method)) {
             request = new HttpGet(url);
-        } else if("POST".equals(method)) {
+        } else if ("POST".equals(method)) {
             request = new HttpPost(url);
-        } else if("PUT".equals(method)) {
+        } else if ("PUT".equals(method)) {
             request = new HttpPut(url);
-        } else if("DELETE".equals(method)) {
+        } else if ("DELETE".equals(method)) {
             request = new HttpDelete(url);
         } else {
             throw new OpenbravoClientException("Method [" + method + "] not supported");
@@ -384,14 +385,14 @@ public interface RestMixin extends PropertyEditable, Unclutter {
 
         headers.forEach((k, v) -> request.addHeader(k, AppUtil.processHashVariable(v, assignment, null, null)));
 
-        if(httpEntity != null && request instanceof HttpEntityEnclosingRequestBase) {
+        if (httpEntity != null && request instanceof HttpEntityEnclosingRequestBase) {
             ((HttpEntityEnclosingRequestBase) request).setEntity(httpEntity);
         }
 
-        if(isDebuging()) {
-            LogUtil.info(getClassName(), "getHttpRequest : url [" + request.getURI() + "] method ["+request.getMethod()+"]");
+        if (isDebuging()) {
+            LogUtil.info(getClassName(), "getHttpRequest : url [" + request.getURI() + "] method [" + request.getMethod() + "]");
 
-            if(request instanceof HttpEntityEnclosingRequestBase) {
+            if (request instanceof HttpEntityEnclosingRequestBase) {
                 HttpEntityEnclosingRequestBase entityEnclosingRequest = (HttpEntityEnclosingRequestBase) request;
                 String requestContentType = Optional.of(entityEnclosingRequest)
                         .map(HttpEntityEnclosingRequestBase::getEntity)
@@ -405,10 +406,11 @@ public interface RestMixin extends PropertyEditable, Unclutter {
                 Optional.of(entityEnclosingRequest)
                         .map(HttpEntityEnclosingRequestBase::getEntity)
                         .map(throwableFunction(HttpEntity::getContent)).ifPresent(inputStream -> {
-                            try(BufferedReader br = new BufferedReader(new InputStreamReader(entityEnclosingRequest.getEntity().getContent()))) {
+                            try (BufferedReader br = new BufferedReader(new InputStreamReader(entityEnclosingRequest.getEntity().getContent()))) {
                                 String bodyContent = br.lines().collect(Collectors.joining());
-                                LogUtil.info(getClassName(), "getHttpRequest : Content-Type [" + requestContentType + "] method [" + requestMethod + "] bodyContent ["+bodyContent+"]");
-                            } catch (IOException ignored) { }
+                                LogUtil.info(getClassName(), "getHttpRequest : Content-Type [" + requestContentType + "] method [" + requestMethod + "] bodyContent [" + bodyContent + "]");
+                            } catch (IOException ignored) {
+                            }
                         });
             }
         }
@@ -418,6 +420,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
 
     /**
      * Get primary key
+     *
      * @param properties
      * @return
      */
@@ -486,6 +489,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
 
     /**
      * Returns 200ish, 300ish, 400ish, or 500ish
+     *
      * @param status
      * @return
      */
@@ -529,12 +533,12 @@ public interface RestMixin extends PropertyEditable, Unclutter {
                 .map(HttpResponse::getEntity)
                 .map(throwableFunction(HttpEntity::getContent))
                 .map(throwableFunction(is -> {
-                    try(InputStreamReader streamReader = new InputStreamReader(is);
-                        JsonReader reader = new JsonReader(streamReader)) {
+                    try (InputStreamReader streamReader = new InputStreamReader(is);
+                         JsonReader reader = new JsonReader(streamReader)) {
 
                         JsonParser parser = new JsonParser();
                         JsonElement jsonElement = parser.parse(reader);
-                        
+
                         if (isDebuging()) {
                             LogUtil.info(getClass().getName(), "handleJsonResponse : jsonElement [" + jsonElement.toString() + "]");
                         }
@@ -543,11 +547,11 @@ public interface RestMixin extends PropertyEditable, Unclutter {
                         return handler.parse(1);
                     }
                 })).orElseThrow(() -> new OpenbravoClientException("Error parsing JSON response"));
-        
+
         FormRowSet result = new FormRowSet();
-        for(FormRow formRow: jsonResult) {
-        	FormRow newRow = new FormRow();
-            if(mapping != null) {
+        for (FormRow formRow : jsonResult) {
+            FormRow newRow = new FormRow();
+            if (mapping != null) {
                 for (Object obj : mapping) {
                     final Map<String, String> row = (Map<String, String>) obj;
                     String restProperties = row.get("restProperties");
@@ -599,21 +603,21 @@ public interface RestMixin extends PropertyEditable, Unclutter {
         int statusCode = getResponseStatus(response);
         String responseContentType = getResponseContentType(response);
 
-        if(isDebuging()) {
+        if (isDebuging()) {
             LogUtil.info(getClass().getName(), "handleResponse : Status [" + statusCode + "] Content-Type [" + responseContentType + "]");
         }
 
-        if(statusCode != HttpServletResponse.SC_OK) {
-            LogUtil.warn(getClassName(), "Response status [" + getResponseStatus(response) + "] message ["+ getResponseBody(response) +"]");
+        if (statusCode != HttpServletResponse.SC_OK) {
+            LogUtil.warn(getClassName(), "Response status [" + getResponseStatus(response) + "] message [" + getResponseBody(response) + "]");
             return null;
         }
 
-        if(isJsonResponse(response)) {
+        if (isJsonResponse(response)) {
             return handleJsonResponse(response, mapping);
-        } else if(isXmlResponse(response)) {
+        } else if (isXmlResponse(response)) {
             return handleXmlResponse(response);
         } else {
-            if(isDebuging()) {
+            if (isDebuging()) {
                 LogUtil.info(getClassName(), "handleResponse : response [" + getResponseBody(response) + "]");
             }
 
@@ -674,11 +678,11 @@ public interface RestMixin extends PropertyEditable, Unclutter {
         return Optional.of(propertyName)
                 .map(properties::get)
                 .filter(o -> o instanceof Object[])
-                .map(o -> (Object[])o)
+                .map(o -> (Object[]) o)
                 .map(Arrays::stream)
                 .orElseGet(Stream::empty)
                 .filter(o -> o instanceof Map)
-                .map(o -> (Map<String, Object>)o)
+                .map(o -> (Map<String, Object>) o)
                 .map(m -> m.entrySet()
                         .stream()
                         .collect(Collectors.toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue()))))
@@ -784,7 +788,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
 
         JSONArray jsonArrayData = Optional.of(dataList)
                 .map(DataList::getRows)
-                .map(r -> (DataListCollection<Map<String, Object>>)r)
+                .map(r -> (DataListCollection<Map<String, Object>>) r)
                 .map(Collection::stream)
                 .orElseGet(Stream::empty)
                 .map(m -> formatRow(dataList, m))
@@ -878,7 +882,6 @@ public interface RestMixin extends PropertyEditable, Unclutter {
     }
 
     /**
-     *
      * @param formDefId
      * @return
      */
@@ -886,10 +889,10 @@ public interface RestMixin extends PropertyEditable, Unclutter {
     default Form generateForm(String formDefId) throws OpenbravoClientException {
         ApplicationContext appContext = AppUtil.getApplicationContext();
         FormService formService = (FormService) appContext.getBean("formService");
-        FormDefinitionDao formDefinitionDao = (FormDefinitionDao)appContext.getBean("formDefinitionDao");
+        FormDefinitionDao formDefinitionDao = (FormDefinitionDao) appContext.getBean("formDefinitionDao");
 
         // check in cache
-        if(formCache.containsKey(formDefId))
+        if (formCache.containsKey(formDefId))
             return formCache.get(formDefId);
 
         // proceed without cache
@@ -898,7 +901,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
             FormDefinition formDef = formDefinitionDao.loadById(formDefId, appDef);
             if (formDef != null) {
                 String json = formDef.getJson();
-                Form form = (Form)formService.createElementFromJson(json);
+                Form form = (Form) formService.createElementFromJson(json);
 
                 // put in cache if possible
                 formCache.put(formDefId, form);
@@ -928,7 +931,6 @@ public interface RestMixin extends PropertyEditable, Unclutter {
     }
 
     /**
-     *
      * @param path
      * @param element
      * @param recordPattern
@@ -943,58 +945,58 @@ public interface RestMixin extends PropertyEditable, Unclutter {
         Matcher matcher = recordPattern.matcher(path);
         boolean isRecordPath = matcher.find() && isLookingForRecordPattern && element.isJsonObject();
 
-        if(isRecordPath) {
+        if (isRecordPath) {
             // start looking for value and label pattern
             row = new FormRow();
         }
 
-        if(element.isJsonObject()) {
-            parseJsonObject(path, (JsonObject)element, recordPattern, fieldPattern, !isRecordPath && isLookingForRecordPattern, rowSet, row, foreignKeyField, primaryKey);
-            if(isRecordPath) {
-                if(foreignKeyField != null && !foreignKeyField.isEmpty())
+        if (element.isJsonObject()) {
+            parseJsonObject(path, (JsonObject) element, recordPattern, fieldPattern, !isRecordPath && isLookingForRecordPattern, rowSet, row, foreignKeyField, primaryKey);
+            if (isRecordPath) {
+                if (foreignKeyField != null && !foreignKeyField.isEmpty())
                     row.setProperty(foreignKeyField, primaryKey);
                 rowSet.add(row);
             }
-        } else if(element.isJsonArray()) {
-            parseJsonArray(path, (JsonArray)element, recordPattern, fieldPattern, !isRecordPath && isLookingForRecordPattern, rowSet, row, foreignKeyField, primaryKey);
-            if(isRecordPath) {
-                if(foreignKeyField != null && !foreignKeyField.isEmpty())
+        } else if (element.isJsonArray()) {
+            parseJsonArray(path, (JsonArray) element, recordPattern, fieldPattern, !isRecordPath && isLookingForRecordPattern, rowSet, row, foreignKeyField, primaryKey);
+            if (isRecordPath) {
+                if (foreignKeyField != null && !foreignKeyField.isEmpty())
                     row.setProperty(foreignKeyField, primaryKey);
                 rowSet.add(row);
             }
-        } else if(element.isJsonPrimitive() && !isLookingForRecordPattern) {
-            for(Map.Entry<String, Pattern> entry : fieldPattern.entrySet()) {
+        } else if (element.isJsonPrimitive() && !isLookingForRecordPattern) {
+            for (Map.Entry<String, Pattern> entry : fieldPattern.entrySet()) {
                 setRow(entry.getValue().matcher(path), entry.getKey(), element.getAsString(), row);
             }
         }
     }
 
     default void setRow(Matcher matcher, String key, String value, FormRow row) {
-        if(matcher.find() && row != null && row.getProperty(key) == null) {
+        if (matcher.find() && row != null && row.getProperty(key) == null) {
             row.setProperty(key, value);
         }
     }
 
     default void parseJsonObject(String path, JsonObject json, Pattern recordPattern, Map<String, Pattern> fieldPattern, boolean isLookingForRecordPattern, FormRowSet rowSet, FormRow row, String foreignKeyField, String primaryKey) {
-        for(Map.Entry<String, JsonElement> entry : json.entrySet()) {
+        for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
             parseJson(path + "." + entry.getKey(), entry.getValue(), recordPattern, fieldPattern, isLookingForRecordPattern, rowSet, row, foreignKeyField, primaryKey);
         }
     }
 
     default void parseJsonArray(String path, JsonArray json, Pattern recordPattern, Map<String, Pattern> fieldPattern, boolean isLookingForRecordPattern, FormRowSet rowSet, FormRow row, String foreignKeyField, String primaryKey) {
-        for(int i = 0, size = json.size(); i < size; i++) {
+        for (int i = 0, size = json.size(); i < size; i++) {
             parseJson(path, json.get(i), recordPattern, fieldPattern, isLookingForRecordPattern, rowSet, row, foreignKeyField, primaryKey);
         }
     }
 
     default Optional<String> getJsonResultVariableValue(String variablePath, JsonElement element) {
-        if(variablePath == null || element == null) {
+        if (variablePath == null || element == null) {
             return Optional.empty();
         }
 
         JsonElement currentElement = element;
-        for(String variable : variablePath.split("\\.")) {
-            if(currentElement == null) {
+        for (String variable : variablePath.split("\\.")) {
+            if (currentElement == null) {
                 break;
             }
             currentElement = getJsonResultVariable(variable, currentElement);
@@ -1004,17 +1006,16 @@ public interface RestMixin extends PropertyEditable, Unclutter {
     }
 
     /**
-     *
      * @param variable : variable name to search
-     * @param element : element to search for variable
+     * @param element  : element to search for variable
      * @return
      */
     default JsonElement getJsonResultVariable(@Nonnull String variable, @Nonnull JsonElement element) {
-        if(element.isJsonObject())
+        if (element.isJsonObject())
             return getJsonResultVariableFromObject(variable, element.getAsJsonObject());
-        else if(element.isJsonArray())
+        else if (element.isJsonArray())
             return getJsonResultVariableFromArray(variable, element.getAsJsonArray());
-        else if(element.isJsonPrimitive())
+        else if (element.isJsonPrimitive())
             return element;
         return null;
     }
@@ -1024,9 +1025,9 @@ public interface RestMixin extends PropertyEditable, Unclutter {
     }
 
     default JsonElement getJsonResultVariableFromArray(String variable, JsonArray array) {
-        for(JsonElement item : array) {
+        for (JsonElement item : array) {
             JsonElement result = getJsonResultVariable(variable, item);
-            if(result != null) {
+            if (result != null) {
                 return result;
             }
         }
