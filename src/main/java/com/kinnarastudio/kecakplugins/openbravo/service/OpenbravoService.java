@@ -136,7 +136,7 @@ public class OpenbravoService {
         return get(baseUrl, tableEntity, username, password, null, where, null, null, null, null, null);
     }
 
-    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String[] fields, @Nullable String condition, Object[] arguments, @Nullable String sort, @Nullable Boolean desc, @Nullable Integer start, @Nullable Integer end) throws OpenbravoClientException {
+    public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String[] fields, @Nullable String condition, Object[] arguments, @Nullable String sort, @Nullable Boolean desc, @Nullable Integer startRow, @Nullable Integer endRow) throws OpenbravoClientException {
         LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "] password [" + (isDebug ? "*" : password) + "]");
 
         try {
@@ -157,12 +157,12 @@ public class OpenbravoService {
                 addUrlParameter(url, "_noActiveFilter", "true");
             }
 
-            if (start != null) {
-                addUrlParameter(url, "_startRow", start.toString());
+            if (startRow != null) {
+                addUrlParameter(url, "_startRow", startRow.toString());
             }
 
-            if (end != null) {
-                addUrlParameter(url, "_endRow", end.toString());
+            if (endRow != null) {
+                addUrlParameter(url, "_endRow", endRow.toString());
             }
 
             if (condition != null && !condition.isEmpty()) {
