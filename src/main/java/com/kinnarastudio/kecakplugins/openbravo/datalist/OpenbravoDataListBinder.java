@@ -61,8 +61,9 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         }
 
         try {
-            final Integer endRow = rows == null ? null : (start == null ? rows - 1 : rows - start - 1);
-            final DataListCollection<Map<String, String>> result = Arrays.stream(obService.get(baseUrl, tableEntity, username, password, null, whereCondition, null, sort, desc, start, endRow))
+            final Integer startRow = start == null ? 0 : start;
+            final Integer endRow = rows == null ? null : (startRow + rows);
+            final DataListCollection<Map<String, String>> result = Arrays.stream(obService.get(baseUrl, tableEntity, username, password, null, whereCondition, null, sort, desc, startRow, endRow))
                     .map(m -> m.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> String.valueOf(e.getValue()))))
                     .collect(Collectors.toCollection(DataListCollection::new));
 
