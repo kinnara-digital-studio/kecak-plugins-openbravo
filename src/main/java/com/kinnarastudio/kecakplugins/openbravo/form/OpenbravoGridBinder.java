@@ -114,10 +114,15 @@ public class OpenbravoGridBinder extends FormBinder
                     .collect(Collectors.toCollection(FormRowSet::new));
         } catch (OpenbravoClientException e) {
             final Map<String, String> errors = e.getErrors();
-            errors.forEach((field, message) -> LogUtil.warn(getClassName(), message));
-            errors.forEach(formData::addFormError);
-            
-            LogUtil.error(getClassName(), e, e.getMessage());
+            if(errors.isEmpty()) {
+                final String elementId = element.getPropertyString("id");
+                formData.addFormError(elementId, e.getMessage());
+            } else {
+                errors.forEach((field, message) -> LogUtil.warn(getClassName(), message));
+                errors.forEach(formData::addFormError);
+
+                LogUtil.error(getClassName(), e, e.getMessage());
+            }
             return null;
         }
     }

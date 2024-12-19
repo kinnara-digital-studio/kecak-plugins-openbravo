@@ -1,0 +1,13 @@
+[
+  {
+    "title": "Openbravo Product Image Url Formatter",
+    "properties": [
+      {
+        "name": "localHost",
+        "label": "Local Host",
+        "type": "textfield",
+        "value": "http://localhost"
+      }
+    ]
+  }
+]

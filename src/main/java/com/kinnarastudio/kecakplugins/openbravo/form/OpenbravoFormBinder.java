@@ -145,10 +145,16 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
 
         } catch (OpenbravoClientException e) {
             Map<String, String> errors = e.getErrors();
-            errors.forEach((field, message) -> LogUtil.warn(getClassName(), message));
-            errors.forEach(formData::addFormError);
 
-            LogUtil.error(getClassName(), e, e.getMessage());
+            if(errors.isEmpty()) {
+                final String formDefId = form.getPropertyString("id");
+                formData.addFormError(formDefId, e.getMessage());
+            } else {
+                errors.forEach((field, message) -> LogUtil.warn(getClassName(), message));
+                errors.forEach(formData::addFormError);
+
+                LogUtil.error(getClassName(), e, e.getMessage());
+            }
 
             return null;
         }

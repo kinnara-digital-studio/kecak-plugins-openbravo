@@ -175,7 +175,7 @@ public class OpenbravoService {
                 if (desc != null && desc) {
                     sort += " desc";
                 }
-                addUrlParameter(url, "", URLEncoder.encode(sort));
+                addUrlParameter(url, "_orderBy", URLEncoder.encode(sort));
             }
 
             if (isDebug) {
