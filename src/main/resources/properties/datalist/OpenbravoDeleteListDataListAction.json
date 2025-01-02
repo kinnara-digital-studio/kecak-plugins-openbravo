@@ -41,7 +41,7 @@
         {
           "name": "password",
           "label": "@@openbravo.password@@",
-          "type": "password"
+          "type": "textfield"
         },
         {
           "label": "Action",

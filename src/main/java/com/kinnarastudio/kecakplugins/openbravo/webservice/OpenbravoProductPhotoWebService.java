@@ -82,7 +82,9 @@ public class OpenbravoProductPhotoWebService extends DefaultApplicationPlugin im
             request.setHeader("Authorization", getAuthenticationHeader(username, password));
 
             final HttpResponse response = client.execute(request);
+
             servletResponse.setContentType(response.getEntity().getContentType().getValue());
+
             try (InputStream inputStream = response.getEntity().getContent()) {
                 final OutputStream outputStream = servletResponse.getOutputStream();
                 byte[] buffer = new byte[BUFFER_LENGTH];
