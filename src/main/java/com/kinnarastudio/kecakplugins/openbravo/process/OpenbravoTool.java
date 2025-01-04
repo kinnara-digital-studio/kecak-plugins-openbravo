@@ -1,6 +1,7 @@
 package com.kinnarastudio.kecakplugins.openbravo.process;
 
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
+import com.kinnarastudio.kecakplugins.openbravo.service.KecakService;
 import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
 import org.joget.apps.app.service.AppService;
 import org.joget.apps.app.service.AppUtil;
@@ -44,10 +45,12 @@ public class OpenbravoTool extends DefaultApplicationPlugin {
             final OpenbravoService openbravoService = OpenbravoService.getInstance();
             openbravoService.setDebug(isDebug());
 
+            final KecakService kecakService = KecakService.getInstance();
+
             final WorkflowAssignment workflowAssignment = (WorkflowAssignment) map.get("workflowAssignment");
             final String dataListId = getDataListId();
             final Map<String, String[]> filters = getDataListFilter();
-            final DataList dataList = openbravoService.generateDataList(dataListId, filters, workflowAssignment);
+            final DataList dataList = kecakService.generateDataList(dataListId, filters, workflowAssignment);
             final String primaryKeyField = dataList.getBinder().getPrimaryKeyColumnName();
 
             final String baseUrl = getBaseUrl();
@@ -74,7 +77,7 @@ public class OpenbravoTool extends DefaultApplicationPlugin {
                 return null;
             }
 
-            final Form form = openbravoService.generateForm(formDefId);
+            final Form form = kecakService.generateForm(formDefId);
             final AppService appService = (AppService) AppUtil.getApplicationContext().getBean("appService");
 
             final Map<String, String> elementToJsonMap = getFormFieldMapping();
@@ -104,7 +107,7 @@ public class OpenbravoTool extends DefaultApplicationPlugin {
                 appService.submitForm(form, formData, ignoreValidation);
             }
 
-        } catch (OpenbravoClientException e) {
+        } catch (Exception e) {
             LogUtil.error(getClassName(), e, e.getMessage());
         }
 

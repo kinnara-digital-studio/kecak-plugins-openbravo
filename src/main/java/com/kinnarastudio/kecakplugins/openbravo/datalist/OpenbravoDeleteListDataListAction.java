@@ -28,7 +28,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class OpenbravoDeleteListDataListAction extends DataListActionDefault implements RestMixin {
-    final public static String LABEL = "Open Bravo Delete List Datalist Action";
+    final public static String LABEL = "Openbravo Delete";
 
     @Override
     public String getClassName() {

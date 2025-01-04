@@ -1,6 +1,7 @@
 package com.kinnarastudio.kecakplugins.openbravo.form;
 
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
+import com.kinnarastudio.kecakplugins.openbravo.service.KecakService;
 import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.form.model.*;
@@ -51,6 +52,7 @@ public class OpenbravoGridBinder extends FormBinder
         final Form parentForm = FormUtil.findRootForm(element);
 
         try {
+            final KecakService kecakService = KecakService.getInstance();
             final OpenbravoService obService = OpenbravoService.getInstance();
             obService.setDebug(isDebugging);
             obService.setIgnoreCertificateError(isIgnoringCertificateError());
@@ -70,7 +72,7 @@ public class OpenbravoGridBinder extends FormBinder
 
             final String foreignKey = getForeignKey();
 
-            final Form form = obService.generateForm(getFormDefId());
+            final Form form = kecakService.generateForm(getFormDefId());
             String foreignKeyValue = parentForm.getPrimaryKeyValue(formData);
 
             if (foreignKeyValue == null) {
@@ -123,6 +125,10 @@ public class OpenbravoGridBinder extends FormBinder
 
                 LogUtil.error(getClassName(), e, e.getMessage());
             }
+            return null;
+        } catch (Exception e) {
+            final String elementId = element.getPropertyString("id");
+            formData.addFormError(elementId, e.getMessage());
             return null;
         }
     }
