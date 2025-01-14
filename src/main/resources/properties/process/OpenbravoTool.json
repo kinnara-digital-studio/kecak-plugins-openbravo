@@ -81,7 +81,7 @@
           },
           {
             "key" : "jsonKey",
-            "label" : "Json Key",
+            "label" : "Openbravo Field",
             "required" : "true"
           }
         ]

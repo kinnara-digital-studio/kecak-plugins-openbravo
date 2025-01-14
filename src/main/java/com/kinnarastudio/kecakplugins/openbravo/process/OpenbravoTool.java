@@ -1,6 +1,5 @@
 package com.kinnarastudio.kecakplugins.openbravo.process;
 
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.kecakplugins.openbravo.service.KecakService;
 import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
 import org.joget.apps.app.service.AppService;
@@ -44,6 +43,7 @@ public class OpenbravoTool extends DefaultApplicationPlugin {
         try {
             final OpenbravoService openbravoService = OpenbravoService.getInstance();
             openbravoService.setDebug(isDebug());
+            openbravoService.setIgnoreCertificateError(ignoreCertificateError());
 
             final KecakService kecakService = KecakService.getInstance();
 
@@ -57,7 +57,11 @@ public class OpenbravoTool extends DefaultApplicationPlugin {
             final String tableEntity = getTableEntity();
             final String username = getUsername();
             final String password = getPassword();
-            final Map<String,String> jsonKeyToDataListFieldMap = getDataListFieldMapping();
+
+            if (isDebug()) {
+                LogUtil.info(getClassName(), "baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "]");
+            }
+            final Map<String, String> jsonKeyToDataListFieldMap = getDataListFieldMapping();
             final Map<String, Object>[] rows = Optional.ofNullable(dataList.getRows())
                     .stream()
                     .flatMap(Collection<Map<String, String>>::stream)
@@ -70,8 +74,8 @@ public class OpenbravoTool extends DefaultApplicationPlugin {
             assert rows.length == postResult.length;
 
             final String formDefId = getFormDefId();
-            if(formDefId.isEmpty()) {
-                if(isDebug()) {
+            if (formDefId.isEmpty()) {
+                if (isDebug()) {
                     LogUtil.info(getClassName(), "Ignoring response");
                 }
                 return null;
@@ -175,5 +179,9 @@ public class OpenbravoTool extends DefaultApplicationPlugin {
 
     public boolean isDebug() {
         return "true".equalsIgnoreCase(getPropertyString("debug"));
+    }
+
+    protected boolean ignoreCertificateError() {
+        return "true".equalsIgnoreCase(getPropertyString("ignoreCertificateError"));
     }
 }
