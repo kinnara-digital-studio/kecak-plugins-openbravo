@@ -105,11 +105,11 @@
         "columns" : [
           {
             "key" : "jsonKey",
-            "label" : "@@rest.jsonPath@@",
+            "label" : "@@openbravo.jsonPath@@",
             "required" : "true"
           }, {
             "key" : "formField",
-            "label" : "@@rest.formField@@",
+            "label" : "@@openbravo.formField@@",
             "required" : "true"
           }
         ]
