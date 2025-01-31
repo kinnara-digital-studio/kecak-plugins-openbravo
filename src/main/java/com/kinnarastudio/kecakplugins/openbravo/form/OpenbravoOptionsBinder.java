@@ -47,7 +47,7 @@ public class OpenbravoOptionsBinder extends FormBinder implements FormLoadOption
                 final String responseString = br.lines().collect(Collectors.joining());
                 final JSONObject jsonResponseObject = new JSONObject(responseString);
 
-                JSONArray jsonData = jsonResponseObject
+                final JSONArray jsonData = jsonResponseObject
                         .getJSONObject("response")
                         .getJSONArray("data");
 

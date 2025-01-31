@@ -11,6 +11,7 @@ import org.joget.plugin.base.PluginManager;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -51,6 +52,12 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         final String tableEntity = getTableEntity();
         final String username = getUsername();
         final String password = getPassword();
+
+        Optional.ofNullable(filterQueryObjects)
+                .stream()
+                .flatMap(Arrays::stream)
+                .forEach(q -> LogUtil.info(getClassName(), "getData : filterQueryObject getOperator [" + q.getOperator() + "] query [" + q.getQuery() + "]"));
+
         final String filterWhereCondition = getFilterWhereCondition(filterQueryObjects);
         final String customWhereCondition = getCustomWhereCondition();
         final String whereCondition;
@@ -158,23 +165,47 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
     }
 
     protected String getFilterWhereCondition(DataListFilterQueryObject[] filterQueryObjects) {
-        String whereCondition = Optional.ofNullable(filterQueryObjects)
+        // fix operator value, don't know why the operators are always 'AND'
+        // even though the filter plugins already set to 'OR'
+        for (DataListFilterQueryObject queryObject : filterQueryObjects) {
+            final String operator;
+            if(queryObject instanceof OpenbravoDataListQueryObject) {
+                operator = ((OpenbravoDataListQueryObject)queryObject).isOr() ? "OR" : "AND";
+            } else {
+                operator = ifEmptyThen(queryObject.getOperator(), "AND");
+            }
+            queryObject.setOperator(operator);
+        }
+
+        final String prefix = Optional.ofNullable(filterQueryObjects)
+                .stream()
+                .flatMap(Arrays::stream)
+                .map(DataListFilterQueryObject::getOperator)
+                .findFirst()
+                .filter(Predicate.not(String::isEmpty))
+                .filter(s -> s.equalsIgnoreCase("or"))
+                .map(s -> "1<>1")
+                .orElse("1=1");
+
+        final String whereCondition = Optional.ofNullable(filterQueryObjects)
                 .stream()
                 .flatMap(Arrays::stream)
                 .filter(Objects::nonNull)
                 .filter(f -> f.getQuery() != null && !f.getQuery().isEmpty())
-                .map(filterQueryObject -> {
-                    final String operator = ifEmptyThen(filterQueryObject.getOperator(), "AND");
-                    final String query = filterQueryObject instanceof OpenbravoDataListQueryObject ? filterQueryObject.getQuery() : filterQueryObject.getQuery().replaceAll("\\$_identifier", ".name");
-                    final StringBuilder condition = getCondition(filterQueryObject, query);
+                .map(queryObject -> {
+                    final String operator = queryObject.getOperator();
+                    final String query = queryObject.getQuery().replaceAll("\\$_identifier", ".name");
+                    final String condition = getCondition(queryObject, query);
 
                     return operator + " " + condition;
                 })
-                .collect(Collectors.joining(" ", "1=1 ", ""));
+                .collect(Collectors.joining(" ", prefix + " ", ""));
+
+        LogUtil.info(getClassName(), "whereCondition [" + whereCondition + "]");
         return whereCondition;
     }
 
-    protected StringBuilder getCondition(DataListFilterQueryObject filterQueryObject, String query) {
+    protected String getCondition(DataListFilterQueryObject filterQueryObject, String query) {
         final Pattern p = Pattern.compile("\\?");
         final String[] values = filterQueryObject.getValues();
 
@@ -188,7 +219,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
             i++;
         }
         m.appendTail(condition);
-        return condition;
+        return condition.toString();
     }
 
     protected String getCustomWhereCondition() {

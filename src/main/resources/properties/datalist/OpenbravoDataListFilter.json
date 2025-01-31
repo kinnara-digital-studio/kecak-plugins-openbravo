@@ -1,6 +1,6 @@
 [
   {
-    "title": "Openbravo DataList Filter",
+    "title": "Openbravo Custom DataList Filter",
     "properties": [
       {
         "name": "operator",

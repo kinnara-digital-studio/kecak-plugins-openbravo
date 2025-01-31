@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.ResourceBundle;
 
 public class OpenbravoDataListFilter extends TextFieldDataListFilterType {
-    public final static String LABEL = "Openbravo DataList Filter";
+    public final static String LABEL = "Openbravo Custom DataList Filter";
 
     @Override
     public String getTemplate(DataList datalist, String name, String label) {
@@ -23,7 +23,6 @@ public class OpenbravoDataListFilter extends TextFieldDataListFilterType {
     @Override
     public DataListFilterQueryObject getQueryObject(DataList datalist, String name) {
         final String value = getValue(datalist, name);
-        LogUtil.info(getClassName(), "value [" + value + "] [" + getPropertyString("defaultValue") + "]");
 
         if (value == null) {
             return null;
@@ -36,20 +35,20 @@ public class OpenbravoDataListFilter extends TextFieldDataListFilterType {
                 .filter(s -> !s.isEmpty())
                 .toArray(String[]::new);
 
-        LogUtil.info(getClassName(), "arguments [" + String.join(";", arguments) + "]");
-
         if (arguments.length > 0) {
-            return new OpenbravoDataListQueryObject() {{
-                final String escapedName = StringUtil.escapeRegex(name);
+            DataListFilterQueryObject queryObject = new OpenbravoDataListQueryObject() {{
+                final String escapedName = StringUtil.escapeRegex(name.replaceAll("\\$_identifier$", ".name"));
                 final String query = OpenbravoDataListFilter.this.getCondition().replaceAll("(^\\$\\B)|(\\B\\$\\B)|(\\B\\$$)", escapedName);
-
-                LogUtil.info(getClassName(), "query [" + query + "]");
 
                 setQuery(query);
                 setValues(arguments);
                 setDatalist(datalist);
-                setOperator(OpenbravoDataListFilter.this.getOperator());
+                setOr("OR".equalsIgnoreCase(OpenbravoDataListFilter.this.getOperator()));
             }};
+
+            LogUtil.info(getClassName(), "operator [" + queryObject.getOperator() + "] query [" + queryObject.getQuery() + "] arguments [" + String.join(";", queryObject.getValues()) + "]");
+
+            return queryObject;
         } else {
             return null;
         }
