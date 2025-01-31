@@ -11,7 +11,6 @@ import org.joget.plugin.base.PluginManager;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -167,29 +166,41 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
     protected String getFilterWhereCondition(DataListFilterQueryObject[] filterQueryObjects) {
         // fix operator value, don't know why the operators are always 'AND'
         // even though the filter plugins already set to 'OR'
-        for (DataListFilterQueryObject queryObject : filterQueryObjects) {
-            final String operator;
-            if(queryObject instanceof OpenbravoDataListQueryObject) {
-                operator = ((OpenbravoDataListQueryObject)queryObject).isOr() ? "OR" : "AND";
-            } else {
-                operator = ifEmptyThen(queryObject.getOperator(), "AND");
-            }
-            queryObject.setOperator(operator);
-        }
-
-        final String prefix = Optional.ofNullable(filterQueryObjects)
+        Optional.ofNullable(filterQueryObjects)
                 .stream()
                 .flatMap(Arrays::stream)
-                .map(DataListFilterQueryObject::getOperator)
-                .findFirst()
-                .filter(Predicate.not(String::isEmpty))
-                .filter(s -> s.equalsIgnoreCase("or"))
-                .map(s -> "1<>1")
-                .orElse("1=1");
+                .forEach(queryObject -> {
+                    final String operator;
+                    if (queryObject instanceof OpenbravoDataListQueryObject) {
+                        operator = ((OpenbravoDataListQueryObject) queryObject).isOr() ? "OR" : "AND";
+                    } else {
+                        operator = ifEmptyThen(queryObject.getOperator(), "AND");
+                    }
+                    queryObject.setOperator(operator);
+                });
 
-        final String whereCondition = Optional.ofNullable(filterQueryObjects)
+        final Stack<DataListFilterQueryObject> orStack = new Stack<>();
+
+        final List<DataListFilterQueryObject> packedQueryObject = Optional.ofNullable(filterQueryObjects)
                 .stream()
                 .flatMap(Arrays::stream)
+                .peek(queryObject -> {
+                    final String operator = queryObject.getOperator();
+                    if ("OR".equalsIgnoreCase(operator)) {
+                        orStack.push(queryObject);
+                    }
+                })
+                .filter(queryObject -> "AND".equalsIgnoreCase(queryObject.getOperator()))
+                .collect(Collectors.toList());
+
+        packedQueryObject.add(new DataListFilterQueryObject() {{
+            setOperator("AND");
+            setQuery(orStack.stream().map(DataListFilterQueryObject::getQuery).collect(Collectors.joining(" OR ")));
+            setValues(orStack.stream().map(DataListFilterQueryObject::getValues).flatMap(Arrays::stream).toArray(String[]::new));
+        }});
+
+        return packedQueryObject
+                .stream()
                 .filter(Objects::nonNull)
                 .filter(f -> f.getQuery() != null && !f.getQuery().isEmpty())
                 .map(queryObject -> {
@@ -197,12 +208,9 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
                     final String query = queryObject.getQuery().replaceAll("\\$_identifier", ".name");
                     final String condition = getCondition(queryObject, query);
 
-                    return operator + " " + condition;
+                    return operator + " (" + condition + ")";
                 })
-                .collect(Collectors.joining(" ", prefix + " ", ""));
-
-        LogUtil.info(getClassName(), "whereCondition [" + whereCondition + "]");
-        return whereCondition;
+                .collect(Collectors.joining(" ", "1=1 ", ""));
     }
 
     protected String getCondition(DataListFilterQueryObject filterQueryObject, String query) {
