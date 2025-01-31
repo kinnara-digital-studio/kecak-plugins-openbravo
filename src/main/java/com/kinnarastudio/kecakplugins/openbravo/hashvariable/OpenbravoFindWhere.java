@@ -69,9 +69,7 @@ public class OpenbravoFindWhere extends DefaultHashVariablePlugin {
 
     @Override
     public Collection<String> availableSyntax() {
-        Collection<String> list = new ArrayList<>();
-        list.add(getPrefix() + ".TABLE_ENTITY[WHERE].GET_FIELD");
-        return list;
+        return Collections.singleton(getPrefix() + ".TABLE_ENTITY[WHERE].GET_FIELD");
     }
 
     @Override
