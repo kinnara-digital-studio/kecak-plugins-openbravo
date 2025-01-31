@@ -14,6 +14,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Openbravo DataList Binder
@@ -193,6 +194,17 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
                 .filter(queryObject -> "AND".equalsIgnoreCase(queryObject.getOperator()))
                 .collect(Collectors.toList());
 
+        orStack.stream()
+                .reduce((q1, q2) -> new DataListFilterQueryObject() {{
+                    final String query = q1.getQuery() + " OR " + q2.getQuery();
+                    final String[] values = Stream.concat(nullableArraysStream(q1.getValues()), nullableArraysStream(q2.getValues()))
+                                    .toArray(String[]::new);
+
+                    setOperator("AND");
+                    setQuery(query);
+                    setValues(values);
+                }})
+                .ifPresent(packedQueryObject::add);
         packedQueryObject.add(new DataListFilterQueryObject() {{
             setOperator("AND");
             setQuery(orStack.stream().map(DataListFilterQueryObject::getQuery).collect(Collectors.joining(" OR ")));
@@ -232,5 +244,11 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
 
     protected String getCustomWhereCondition() {
         return getPropertyString("customWhereCondition");
+    }
+
+    protected <T> Stream<T> nullableArraysStream(@Nullable T[] array) {
+        return Optional.ofNullable(array)
+                .stream()
+                .flatMap(Arrays::stream);
     }
 }
