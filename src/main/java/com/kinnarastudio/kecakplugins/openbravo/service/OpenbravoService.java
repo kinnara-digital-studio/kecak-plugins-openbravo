@@ -7,8 +7,6 @@ import com.kinnarastudio.commons.jsonstream.model.JSONObjectEntry;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.RestClientException;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpUriRequest;
 import org.joget.commons.util.LogUtil;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -51,6 +49,67 @@ public class OpenbravoService {
         return instance;
     }
 
+    public Map<String, String> delete(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String primaryKey, @Nonnull String username, @Nonnull String password) throws OpenbravoClientException {
+        LogUtil.info(getClass().getName(), "delete : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] primaryKey [" + primaryKey + "] username [" + username + "] password [" + (isDebug ? "*" : password) + "]");
+        try {
+            final RestService restService = RestService.getInstance();
+            restService.setIgnoreCertificate(ignoreCertificateError);
+            restService.setDebug(isDebug);
+
+            final StringBuilder url = new StringBuilder()
+                    .append(baseUrl)
+                    .append("/org.openbravo.service.json.jsonrest/")
+                    .append(tableEntity)
+                    .append("/")
+                    .append(primaryKey);
+
+            if (noFilterActive) {
+                addUrlParameter(url, "_noActiveFilter", "true");
+            }
+
+            final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getBasicAuthenticationHeader(username, password));
+            final HttpResponse response = restService.doDelete(url.toString(), headers);
+
+            final int statusCode = restService.getResponseStatus(response);
+            if (restService.getStatusGroupCode(statusCode) != 200) {
+                throw new RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
+            } else if (statusCode != 200) {
+                LogUtil.warn(getClass().getName(), "Response code [" + statusCode + "] is considered as success");
+            }
+
+            if (!restService.isJsonResponse(response)) {
+                throw new RestClientException("Content type is not JSON");
+            }
+
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
+                final String responsePayload = br.lines().collect(Collectors.joining());
+
+                if (isDebug) {
+                    LogUtil.info(getClass().getName(), "get : responsePayload [" + responsePayload + "]");
+                }
+
+                final JSONObject jsonResponse = new JSONObject(responsePayload)
+                        .getJSONObject("response");
+
+
+                final int status = jsonResponse.optInt("status", -1);
+                if (status != 0) {
+                    throw new OpenbravoClientException(responsePayload);
+                }
+
+                final JSONObject jsonData = jsonResponse.getJSONObject("data");
+                return JSONStream.of(jsonData, Try.onBiFunction(JSONObject::getString))
+                        .peek(e -> {
+                            if (isDebug && "_identifier".equals(e.getKey())) {
+                                LogUtil.info(getClass().getName(), "get : identifier [" + e.getValue() + "]");
+                            }
+                        })
+                        .collect(Collectors.toUnmodifiableMap(JSONObjectEntry::getKey, JSONObjectEntry::getValue));
+            }
+        } catch (RestClientException | JSONException | IOException e) {
+            throw new OpenbravoClientException(e);
+        }
+    }
     @Nonnull
     public Map<String, String> get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String primaryKey, @Nonnull String username, @Nonnull String password) throws OpenbravoClientException {
         LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] primaryKey [" + primaryKey + "] username [" + username + "] password [" + (isDebug ? "*" : password) + "]");
@@ -71,12 +130,8 @@ public class OpenbravoService {
                 addUrlParameter(url, "_noActiveFilter", "true");
             }
 
-            final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getAuthenticationHeader(username, password));
-            final HttpClient client = restService.getHttpClient();
-
-            final HttpUriRequest request = restService.getHttpRequest(url.toString(), headers);
-
-            final HttpResponse response = client.execute(request);
+            final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getBasicAuthenticationHeader(username, password));
+            final HttpResponse response = restService.doGet(url.toString(), headers);
 
             final int statusCode = restService.getResponseStatus(response);
             if (restService.getStatusGroupCode(statusCode) != 200) {
@@ -170,11 +225,8 @@ public class OpenbravoService {
                 LogUtil.info(getClass().getName(), "get : url [" + url + "]");
             }
 
-            final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getAuthenticationHeader(username, password));
-            final HttpUriRequest request = restService.getHttpRequest(url.toString(), headers);
-
-            final HttpClient client = restService.getHttpClient();
-            final HttpResponse response = client.execute(request);
+            final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getBasicAuthenticationHeader(username, password));
+            final HttpResponse response = restService.doGet(url.toString(), headers);
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
                 final String responsePayload = br.lines().collect(Collectors.joining());
@@ -248,11 +300,11 @@ public class OpenbravoService {
     }
 
     public int count(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String where) throws OpenbravoClientException {
-        final RestService restService = RestService.getInstance();
-        restService.setIgnoreCertificate(ignoreCertificateError);
-        restService.setDebug(isDebug);
-
         try {
+            final RestService restService = RestService.getInstance();
+            restService.setIgnoreCertificate(ignoreCertificateError);
+            restService.setDebug(isDebug);
+
             final StringBuilder url = new StringBuilder()
                     .append(baseUrl)
                     .append("/ws/com.kinnarastudio.openbravo.kecakadapter.RecordCount/")
@@ -266,12 +318,8 @@ public class OpenbravoService {
                 addUrlParameter(url, "_where", URLEncoder.encode(where));
             }
 
-            final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getAuthenticationHeader(username, password));
-            final HttpUriRequest request = restService.getHttpRequest(url.toString(), headers);
-
-            // kirim request ke server
-            final HttpClient client = restService.getHttpClient();
-            final HttpResponse response = client.execute(request);
+            final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getBasicAuthenticationHeader(username, password));
+            final HttpResponse response = restService.doGet(url.toString(), headers);;
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
                 final String responsePayload = br.lines().collect(Collectors.joining());
@@ -315,8 +363,7 @@ public class OpenbravoService {
             restService.setDebug(isDebug);
 
             final StringBuilder url = new StringBuilder().append(baseUrl).append("/org.openbravo.service.json.jsonrest/").append(tableEntity);
-            final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getAuthenticationHeader(username, password));
-            final HttpClient client = restService.getHttpClient();
+            final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getBasicAuthenticationHeader(username, password));
 
             cutCircuit = false;
 
@@ -330,9 +377,7 @@ public class OpenbravoService {
                                         .collect(JSONCollectors.toJSONObject(Map.Entry::getKey, Map.Entry::getValue)));
                             }};
 
-                            final HttpUriRequest request = restService.getHttpRequest(url.toString(), "POST", headers, jsonBody);
-
-                            final HttpResponse response = client.execute(request);
+                            final HttpResponse response = restService.doPost(url.toString(), headers, jsonBody);
 
                             final int statusCode = restService.getResponseStatus(response);
                             if (restService.getStatusGroupCode(statusCode) != 200) {

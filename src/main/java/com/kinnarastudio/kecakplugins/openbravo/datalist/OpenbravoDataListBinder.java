@@ -44,7 +44,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
     @Override
     public DataListCollection<Map<String, String>> getData(@Nullable DataList dataList, @Nullable Map properties, @Nullable DataListFilterQueryObject[] filterQueryObjects, String sort, @Nullable Boolean desc, @Nullable Integer start, @Nullable Integer rows) {
         final OpenbravoService obService = OpenbravoService.getInstance();
-        obService.setDebug(isDebuging());
+        obService.setDebug(isDebugging());
         obService.setIgnoreCertificateError(isIgnoreCertificateError());
         obService.setNoFilterActive(isNoFilterActive());
 
@@ -84,7 +84,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
     @Override
     public int getDataTotalRowCount(DataList dataList, Map map, DataListFilterQueryObject[] filterQueryObjects) {
         final OpenbravoService obService = OpenbravoService.getInstance();
-        obService.setDebug(isDebuging());
+        obService.setDebug(isDebugging());
         obService.setIgnoreCertificateError(isIgnoreCertificateError());
         obService.setNoFilterActive(isNoFilterActive());
 
@@ -181,6 +181,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
                 });
 
         final Stack<DataListFilterQueryObject> orStack = new Stack<>();
+        final Queue<DataListFilterQueryObject> orQueue = new ArrayDeque<>();
 
         final List<DataListFilterQueryObject> packedQueryObject = Optional.ofNullable(filterQueryObjects)
                 .stream()
@@ -189,6 +190,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
                     final String operator = queryObject.getOperator();
                     if ("OR".equalsIgnoreCase(operator)) {
                         orStack.push(queryObject);
+                        orQueue.add(queryObject);
                     }
                 })
                 .filter(queryObject -> "AND".equalsIgnoreCase(queryObject.getOperator()))

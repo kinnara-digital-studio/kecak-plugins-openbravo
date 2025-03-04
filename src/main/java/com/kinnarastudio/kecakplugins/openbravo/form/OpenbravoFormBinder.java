@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 /**
  * Openbravo Form Binder
  */
-public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBinder, FormStoreElementBinder, RestMixin {
+public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBinder, FormStoreElementBinder, FormDeleteBinder, RestMixin {
     public final static String LABEL = "Openbravo Form Binder";
 
     @Override
@@ -43,12 +43,12 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
 
         final Form form = FormUtil.findRootForm(element);
         String tableEntity = getPropertyString("tableEntity");
-        final StringBuilder url = new StringBuilder(getApiEndPoint(getPropertyBaseUrl(), tableEntity, primaryKey));
+        final StringBuilder url = new StringBuilder(getApiEndPoint(getBaseUrl(), tableEntity, primaryKey));
         if (getPropertyNoFilterActive()) {
             addUrlParameter(url, "_noActiveFilter", "true");
         }
 
-        final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
+        final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getUsername(), getPassword()));
 
         try {
             final HttpUriRequest request = getHttpRequest(workflowAssignment, url.toString(), "GET", headers);
@@ -85,11 +85,11 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
     @Override
     public FormRowSet store(Element form, FormRowSet rowSet, FormData formData) {
         final Boolean isStored = (Boolean) form.getProperty("_stored");
-        if(isStored != null && !isStored) {
+        if (isStored != null && !isStored) {
             return rowSet;
         }
 
-        final boolean isDebugging = isDebuging();
+        final boolean isDebugging = isDebugging();
 
         if (Boolean.parseBoolean(String.valueOf(form.getProperty("_stored")))) {
             return formData.getStoreBinderData(form.getStoreBinder());
@@ -101,7 +101,7 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
         obService.setNoFilterActive(isNoFilterActive());
         obService.setIgnoreCertificateError(isIgnoreCertificateError());
 
-        String tableEntity = getPropertyTableEntity(FormUtil.findRootForm(form));
+        String tableEntity = getTableEntity();
 
         final Map<String, Object> row = Optional.ofNullable(rowSet)
                 .stream()
@@ -128,7 +128,7 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
                 }));
 
         try {
-            final FormRow result = Arrays.stream(obService.post(getPropertyBaseUrl(), tableEntity, getPropertyUsername(), getPropertyPassword(), new Map[]{row}))
+            final FormRow result = Arrays.stream(obService.post(getBaseUrl(), tableEntity, getUsername(), getPassword(), new Map[]{row}))
                     .map(Map<String, Object>::entrySet)
                     .flatMap(Collection::stream)
                     .collect(Collectors.toMap(e -> e.getKey().replaceAll("[^a-zA-Z0-9_]", ""), Map.Entry::getValue, (accept, reject) -> accept, FormRow::new));
@@ -146,7 +146,7 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
         } catch (OpenbravoClientException e) {
             Map<String, String> errors = e.getErrors();
 
-            if(errors.isEmpty()) {
+            if (errors.isEmpty()) {
                 final String formDefId = form.getPropertyString("id");
                 formData.addFormError(formDefId, e.getMessage());
             } else {
@@ -193,15 +193,15 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
         return AppUtil.readPluginResource(getClassName(), "/properties/form/OpenbravoFormBinder.json", null, false, "/messages/Openbravo");
     }
 
-    protected String getPropertyBaseUrl() {
+    protected String getBaseUrl() {
         return AppUtil.processHashVariable(getPropertyString("baseUrl"), null, null, null);
     }
 
-    protected String getPropertyUsername() {
+    protected String getUsername() {
         return AppUtil.processHashVariable(getPropertyString("username"), null, null, null);
     }
 
-    protected String getPropertyPassword() {
+    protected String getPassword() {
         return AppUtil.processHashVariable(getPropertyString("password"), null, null, null);
     }
 
@@ -222,8 +222,7 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
         return "true".equalsIgnoreCase(getPropertyString("noFilterActive"));
     }
 
-    protected String getPropertyTableEntity(Form form) {
-//        return form.getPropertyString(FormUtil.PROPERTY_TABLE_NAME);
+    protected String getTableEntity() {
         return AppUtil.processHashVariable(getPropertyString("tableEntity"), null, null, null);
     }
 
@@ -239,7 +238,34 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
     }
 
     @Override
-    public boolean isDebuging() {
+    public boolean isDebugging() {
         return "true".equalsIgnoreCase(getPropertyString("debug"));
+    }
+
+    @Override
+    public void delete(Element element, FormRowSet rowSet, FormData formData, boolean deleteGrid, boolean deleteSubform, boolean abortProcess, boolean deleteFiles, boolean hardDelete) {
+        final boolean isDebugging = isDebugging();
+
+        final OpenbravoService obService = OpenbravoService.getInstance();
+        obService.setShortCircuit(false);
+        obService.setDebug(isDebugging);
+        obService.setNoFilterActive(isNoFilterActive());
+        obService.setIgnoreCertificateError(isIgnoreCertificateError());
+
+        final String baseUrl = getBaseUrl();
+        final String tableEntity = getTableEntity();
+        final String username = getUsername();
+        final String password = getPassword();
+
+        Optional.ofNullable(rowSet)
+                .stream()
+                .flatMap(Collection::stream)
+                .map(FormRow::getId)
+                .forEach(Try.onConsumer(key -> {
+                    final Map<String, String> result = obService.delete(baseUrl, tableEntity, key, username, password);
+                    if (isDebugging) {
+                        LogUtil.info(getClassName(), "ID [" + result.get("id") + "] from entity [" + tableEntity + "] has been deleted");
+                    }
+                }));
     }
 }

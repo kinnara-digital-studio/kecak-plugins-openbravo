@@ -213,7 +213,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
      *
      * @return
      */
-    default boolean isDebuging() {
+    default boolean isDebugging() {
         return "true".equalsIgnoreCase(getPropertyString("debug"));
     }
 
@@ -248,7 +248,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
             try {
                 return new JSONArray(inputString).toString();
             } catch (JSONException jsonArrayException) {
-                if (isDebuging()) {
+                if (isDebugging()) {
                     throw new OpenbravoClientException("Invalid json : " + inputString);
                 } else {
                     throw new OpenbravoClientException("Invalid json");
@@ -389,7 +389,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
             ((HttpEntityEnclosingRequestBase) request).setEntity(httpEntity);
         }
 
-        if (isDebuging()) {
+        if (isDebugging()) {
             LogUtil.info(getClassName(), "getHttpRequest : url [" + request.getURI() + "] method [" + request.getMethod() + "]");
 
             if (request instanceof HttpEntityEnclosingRequestBase) {
@@ -539,7 +539,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
                         JsonParser parser = new JsonParser();
                         JsonElement jsonElement = parser.parse(reader);
 
-                        if (isDebuging()) {
+                        if (isDebugging()) {
                             LogUtil.info(getClass().getName(), "handleJsonResponse : jsonElement [" + jsonElement.toString() + "]");
                         }
 
@@ -603,7 +603,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
         int statusCode = getResponseStatus(response);
         String responseContentType = getResponseContentType(response);
 
-        if (isDebuging()) {
+        if (isDebugging()) {
             LogUtil.info(getClass().getName(), "handleResponse : Status [" + statusCode + "] Content-Type [" + responseContentType + "]");
         }
 
@@ -617,7 +617,7 @@ public interface RestMixin extends PropertyEditable, Unclutter {
         } else if (isXmlResponse(response)) {
             return handleXmlResponse(response);
         } else {
-            if (isDebuging()) {
+            if (isDebugging()) {
                 LogUtil.info(getClassName(), "handleResponse : response [" + getResponseBody(response) + "]");
             }
 

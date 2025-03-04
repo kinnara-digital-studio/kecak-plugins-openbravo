@@ -1,6 +1,5 @@
 package com.kinnarastudio.kecakplugins.openbravo.service;
 
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.RestClientException;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -20,10 +19,12 @@ import org.json.JSONObject;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
+import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -35,15 +36,18 @@ public class RestService {
 
     private boolean ignoreCertificate = false;
 
-    private RestService() {
+    private final HttpClient client;
+
+    private RestService() throws RestClientException {
+        this.client = getHttpClient();
     }
 
-    public static synchronized RestService getInstance() {
+    public static synchronized RestService getInstance() throws RestClientException {
         if (instance == null) instance = new RestService();
         return instance;
     }
 
-    public HttpClient getHttpClient() throws RestClientException {
+    protected HttpClient getHttpClient() throws RestClientException {
         try {
             if (ignoreCertificate) {
                 SSLContext sslContext = new SSLContextBuilder()
@@ -89,17 +93,40 @@ public class RestService {
         return status - (status % 100);
     }
 
-    public HttpUriRequest getHttpRequest(@Nonnull String url, @Nonnull Map<String, String> headers) throws RestClientException {
-        return getHttpRequest(url, "GET", headers, null);
+    public HttpResponse doGet(@Nonnull String url, @Nonnull Map<String, String> headers) throws RestClientException {
+        try {
+            final HttpUriRequest request = getHttpRequest(url, Method.GET, headers, null);
+            return client.execute(request);
+        } catch (IOException e) {
+            throw new RestClientException(e);
+        }
     }
 
-    public HttpUriRequest getHttpRequest(@Nonnull String url, @Nonnull String method, @Nonnull Map<String, String> headers, @Nullable JSONObject bodyPayload) throws RestClientException {
+    public HttpResponse doPost(@Nonnull String url, @Nonnull Map<String, String> headers, @Nullable JSONObject bodyPayload) throws RestClientException {
+        try {
+            final HttpUriRequest request = getHttpRequest(url, Method.POST, headers, bodyPayload);
+            return client.execute(request);
+        } catch (IOException e) {
+            throw new RestClientException(e);
+        }
+    }
+
+    public HttpResponse doDelete(@Nonnull String url, @Nonnull Map<String, String> headers) throws RestClientException {
+        try {
+            final HttpUriRequest request = getHttpRequest(url, Method.DELETE, headers, null);
+            return client.execute(request);
+        } catch (IOException e) {
+            throw new RestClientException(e);
+        }
+    }
+
+    protected HttpUriRequest getHttpRequest(@Nonnull String url, @Nonnull Method method, @Nonnull Map<String, String> headers, @Nullable JSONObject bodyPayload) throws RestClientException {
         if (isDebug) {
             LogUtil.info(getClass().getName(), "getHttpRequest : url [" + url + "] method [" + method + "] bodyPayload [" + bodyPayload + "]");
         }
 
         @Nullable HttpEntity httpEntity;
-        if ("GET".equalsIgnoreCase(method) || "DELETE".equalsIgnoreCase(method) || bodyPayload == null) {
+        if (method == Method.GET || method == Method.DELETE || bodyPayload == null) {
             httpEntity = null;
         } else {
             httpEntity = new StringEntity(bodyPayload.toString(), ContentType.APPLICATION_JSON);
@@ -107,28 +134,33 @@ public class RestService {
 
         final HttpRequestBase request;
 
-        if ("GET".equalsIgnoreCase(method)) {
-            request = new HttpGet(url);
-        } else if ("POST".equalsIgnoreCase(method)) {
-            request = new HttpPost(url);
-        } else if ("PUT".equalsIgnoreCase(method)) {
-            request = new HttpPut(url);
-        } else if ("DELETE".equalsIgnoreCase(method)) {
-            request = new HttpDelete(url);
-        } else {
-            throw new RestClientException("Method [" + method + "] not supported");
+        switch (method) {
+            case GET:
+                request = new HttpGet(url);
+                break;
+            case PUT:
+                request = new HttpPut(url);
+                break;
+            case POST:
+                request = new HttpPost(url);
+                break;
+            case DELETE:
+                request = new HttpDelete(url);
+                break;
+            default:
+                throw new RestClientException("Method [" + method + "] not supported");
         }
 
         headers.forEach(request::addHeader);
 
-        if (httpEntity != null && request instanceof HttpEntityEnclosingRequestBase) {
+        if (httpEntity != null) {
             ((HttpEntityEnclosingRequestBase) request).setEntity(httpEntity);
         }
 
         return request;
     }
 
-    public String getAuthenticationHeader(String username, String password) {
+    public String getBasicAuthenticationHeader(String username, String password) {
         return "Basic " + Base64.getEncoder().encodeToString(String.format("%s:%s", username, password).getBytes());
     }
 
@@ -138,5 +170,12 @@ public class RestService {
 
     public void setDebug(boolean debug) {
         isDebug = debug;
+    }
+
+    public enum Method {
+        GET,
+        POST,
+        PUT,
+        DELETE,
     }
 }
