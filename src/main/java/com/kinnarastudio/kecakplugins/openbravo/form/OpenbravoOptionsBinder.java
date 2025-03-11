@@ -1,27 +1,18 @@
 package com.kinnarastudio.kecakplugins.openbravo.form;
 
-import com.kinnarastudio.commons.Try;
-import com.kinnarastudio.commons.jsonstream.JSONStream;
 import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpUriRequest;
+import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.form.model.*;
 import org.joget.commons.util.LogUtil;
 import org.joget.plugin.base.PluginManager;
-import org.joget.workflow.model.WorkflowAssignment;
-import org.joget.workflow.model.service.WorkflowManager;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import javax.annotation.Nullable;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 public class OpenbravoOptionsBinder extends FormBinder implements FormLoadOptionsBinder, RestMixin, FormAjaxOptionsBinder {
@@ -29,47 +20,31 @@ public class OpenbravoOptionsBinder extends FormBinder implements FormLoadOption
 
     @Override
     public FormRowSet load(Element element, String primaryKey, FormData formData) {
-        WorkflowManager workflowManager = (WorkflowManager) AppUtil.getApplicationContext().getBean("workflowManager");
+        final String valueColumn = getPropertyString("valueColumn");
+        final String labelColumn = getPropertyString("labelColumn");
 
-        final WorkflowAssignment workflowAssignment = Optional.ofNullable(formData)
-                .map(FormData::getActivityId)
-                .map(workflowManager::getAssignment)
-                .orElse(null);
         try {
-            final Map<String, String> headers = Collections.singletonMap("Authorization", getAuthenticationHeader(getPropertyUsername(), getPropertyPassword()));
+            final OpenbravoService openbravoService = OpenbravoService.getInstance();
+            final String[] fields = null;
+            final Map<String, Object>[] records = openbravoService.get(getPropertyBaseUrl(), getPropertyTableEntity(), getPropertyUsername(), getPropertyPassword(), fields, getWhereCondition(), null, null, null, null, null);
+            final FormRowSet rowSet = Optional.ofNullable(records)
+                    .stream()
+                    .flatMap(Arrays::stream)
+                    .map(m -> {
+                        final String value = String.valueOf(m.getOrDefault(valueColumn, ""));
+                        final String label = String.valueOf(m.getOrDefault(labelColumn, ""));
 
-            final String url = getApiEndPoint(getPropertyBaseUrl(), getPropertyTableEntity(), 1000, getWhereCondition());
-            final HttpUriRequest request = getHttpRequest(workflowAssignment, url, "GET", headers);
-            final HttpClient client = getHttpClient(isIgnoreCertificateError());
-            final HttpResponse response = client.execute(request);
+                        return new FormRow() {{
+                            setProperty("value", value);
+                            setProperty("label", label.isEmpty() ? value : label);
+                        }};
+                    })
+                    .collect(Collectors.toCollection(FormRowSet::new));
 
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                final String responseString = br.lines().collect(Collectors.joining());
-                final JSONObject jsonResponseObject = new JSONObject(responseString);
+            rowSet.setMultiRow(true);
 
-                final JSONArray jsonData = jsonResponseObject
-                        .getJSONObject("response")
-                        .getJSONArray("data");
-
-                final FormRowSet rowSet = JSONStream.of(jsonData, Try.onBiFunction(JSONArray::getJSONObject))
-                        .map(Try.onFunction(t -> {
-                            FormRow row = new FormRow();
-                            final String value = t.getString(getPropertyString("valueColumn"));
-                            final String label = t.getString(getPropertyString("labelColumn"));
-
-                            row.setProperty("value", value);
-                            row.setProperty("label", label.isEmpty() ? value : label);
-
-                            return row;
-                        }))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toCollection(FormRowSet::new));
-
-                rowSet.setMultiRow(true);
-
-                return rowSet;
-            }
-        } catch (OpenbravoClientException | IOException | JSONException e) {
+            return rowSet;
+        } catch (OpenbravoClientException e) {
             LogUtil.error(getClassName(), e, e.getMessage());
             return null;
         }
@@ -83,36 +58,12 @@ public class OpenbravoOptionsBinder extends FormBinder implements FormLoadOption
         return AppUtil.processHashVariable(getPropertyString("tableEntity"), null, null, null);
     }
 
-    protected String getApiEndPoint(String baseUrl, String tableEntity, int endRow, String where) {
-
-        StringBuilder url = new StringBuilder(baseUrl + "/org.openbravo.service.json.jsonrest/" + tableEntity + "?");
-
-        if(endRow > 0) {
-            url.append("_endRow=").append(endRow).append("&");
-        }
-
-        if(where != null && !where.isEmpty()) {
-            url.append("_where=").append(where).append("&");
-        }
-
-        return url.toString();
-    }
-
     protected String getPropertyUsername() {
         return AppUtil.processHashVariable(getPropertyString("username"), null, null, null);
     }
 
-    protected FormRow convertJson(JSONObject json) {
-        return JSONStream.of(json, Try.onBiFunction(JSONObject::getString))
-                .collect(FormRow::new, (row, e) -> row.setProperty(e.getKey(), e.getValue()), FormRow::putAll);
-    }
-
     protected String getPropertyPassword() {
         return AppUtil.processHashVariable(getPropertyString("password"), null, null, null);
-    }
-
-    protected String getAuthenticationHeader(String username, String password) {
-        return "Basic " + Base64.getEncoder().encodeToString(String.format("%s:%s", username, password).getBytes());
     }
 
     @Override
