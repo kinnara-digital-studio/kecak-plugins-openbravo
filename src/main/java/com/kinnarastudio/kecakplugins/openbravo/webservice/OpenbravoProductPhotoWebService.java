@@ -1,7 +1,9 @@
 package com.kinnarastudio.kecakplugins.openbravo.webservice;
 
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.RestClientException;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -83,9 +85,16 @@ public class OpenbravoProductPhotoWebService extends DefaultApplicationPlugin im
 
             final HttpResponse response = client.execute(request);
 
-            servletResponse.setContentType(response.getEntity().getContentType().getValue());
+            final Optional<HttpEntity> optEntity = Optional.of(response)
+                    .map(HttpResponse::getEntity);
 
-            try (InputStream inputStream = response.getEntity().getContent()) {
+            optEntity.map(HttpEntity::getContentType)
+                    .map(NameValuePair::getValue)
+                    .ifPresent(servletResponse::setContentType);
+
+            final HttpEntity entity = optEntity.orElseThrow(() -> new ApiException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Http entity is not available"));
+
+            try (InputStream inputStream = entity.getContent()) {
                 final OutputStream outputStream = servletResponse.getOutputStream();
                 byte[] buffer = new byte[BUFFER_LENGTH];
                 int bytesRead;
@@ -94,20 +103,6 @@ public class OpenbravoProductPhotoWebService extends DefaultApplicationPlugin im
                 }
                 outputStream.flush();
             }
-
-//            final URL url = new URL(urlString);
-////            final URLConnection urlConnection = url.openConnection();
-//            httpServletResponse.setContentType("image/jpg");
-//            final OutputStream outputStream = httpServletResponse.getOutputStream();
-//            try (InputStream inputStream = url.openStream()) {
-//                byte[] buffer = new byte[BUFFER_LENGTH];
-//
-//                int bytesRead;
-//                while ((bytesRead = inputStream.read(buffer)) >= 0) {
-//                    outputStream.write(buffer, 0, bytesRead);
-//                }
-//                outputStream.flush();
-//            }
         } catch (ApiException e) {
             servletResponse.sendError(e.getErrorCode(), e.getMessage());
         } catch (RestClientException e) {
