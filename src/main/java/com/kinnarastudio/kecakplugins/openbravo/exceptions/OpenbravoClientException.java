@@ -9,33 +9,16 @@ import java.util.Map;
  * Rest Client Exception
  */
 public class OpenbravoClientException extends Exception {
-    private final Map<String, String> errors;
 
     public OpenbravoClientException(String message, Throwable cause) {
         super(message, cause);
-        errors = Collections.emptyMap();
     }
 
     public OpenbravoClientException(Throwable cause) {
-        super(cause);
-        errors = Collections.emptyMap();
+        super(cause.getMessage(), cause);
     }
 
     public OpenbravoClientException(String message) {
         super(message);
-        errors = Collections.emptyMap();
-    }
-
-    public OpenbravoClientException(Map<String,String> errors) {
-        this(errors.toString(), errors);
-    }
-
-    public OpenbravoClientException(String message, Map<String,String> errors) {
-        super(message);
-        this.errors = errors;
-    }
-
-    public Map<String, String> getErrors() {
-        return errors;
     }
 }

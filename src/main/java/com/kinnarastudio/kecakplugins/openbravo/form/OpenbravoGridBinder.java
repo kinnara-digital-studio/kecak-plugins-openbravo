@@ -49,19 +49,24 @@ public class OpenbravoGridBinder extends FormBinder
     public FormRowSet store(Element element, FormRowSet rowSet, FormData formData) {
         final boolean isDebugging = isDebugging();
 
-        final Form parentForm = FormUtil.findRootForm(element);
 
         try {
             final KecakService kecakService = KecakService.getInstance();
             final OpenbravoService obService = OpenbravoService.getInstance();
             obService.setDebug(isDebugging);
             obService.setIgnoreCertificateError(isIgnoringCertificateError());
-            obService.setShortCircuit(false);
+            obService.setShortCircuit(true);
             obService.setNoFilterActive(isNoFilterActive());
 
+            final Form parentForm = FormUtil.findRootForm(element);
             FormStoreBinder parentStoreBinder = parentForm.getStoreBinder();
             FormRowSet storeBinderData = formData.getStoreBinderData(parentStoreBinder);
             FormRowSet parentRowSet = parentStoreBinder.store(parentForm, storeBinderData, formData);
+
+            final Map<String, String> formErrors = formData.getFormErrors();
+            if (formErrors != null && !formErrors.isEmpty()) {
+                return null;
+            }
 
             Optional.ofNullable(parentRowSet)
                     .stream()
@@ -76,7 +81,7 @@ public class OpenbravoGridBinder extends FormBinder
             String foreignKeyValue = parentForm.getPrimaryKeyValue(formData);
 
             if (foreignKeyValue == null) {
-                throw new OpenbravoClientException(Collections.singletonMap(foreignKey, "Foreign key [" + foreignKey + "] is NULL"));
+                throw new OpenbravoClientException("Foreign key [" + foreignKey + "] is NULL");
             }
 
             final String gridElementId = element.getPropertyString("id");
@@ -114,21 +119,11 @@ public class OpenbravoGridBinder extends FormBinder
             return Arrays.stream(result)
                     .map(m -> m.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (accept, ignore) -> accept, FormRow::new)))
                     .collect(Collectors.toCollection(FormRowSet::new));
-        } catch (OpenbravoClientException e) {
-            final Map<String, String> errors = e.getErrors();
-            if(errors.isEmpty()) {
-                final String elementId = element.getPropertyString("id");
-                formData.addFormError(elementId, e.getMessage());
-            } else {
-                errors.forEach((field, message) -> LogUtil.warn(getClassName(), message));
-                errors.forEach(formData::addFormError);
-
-                LogUtil.error(getClassName(), e, e.getMessage());
-            }
-            return null;
         } catch (Exception e) {
             final String elementId = element.getPropertyString("id");
             formData.addFormError(elementId, e.getMessage());
+            LogUtil.error(getClassName(), e, e.getMessage());
+
             return null;
         }
     }

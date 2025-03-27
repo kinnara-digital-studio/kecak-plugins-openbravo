@@ -4,6 +4,7 @@ import com.kinnarastudio.commons.Try;
 import com.kinnarastudio.commons.jsonstream.JSONStream;
 import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
+import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoCreateRecordException;
 import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -85,18 +86,20 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
     @Override
     public FormRowSet store(Element form, FormRowSet rowSet, FormData formData) {
         final Boolean isStored = (Boolean) form.getProperty("_stored");
-        if (isStored != null && !isStored) {
-            return rowSet;
+        if (isStored != null && isStored) {
+//            return rowSet;
+            return Optional.of(form)
+                    .map(Element::getStoreBinder)
+                    .map(formData::getStoreBinderData)
+                    .orElse(rowSet);
         }
+
+        form.setProperty("_stored", true);
 
         final boolean isDebugging = isDebugging();
 
-        if (Boolean.parseBoolean(String.valueOf(form.getProperty("_stored")))) {
-            return formData.getStoreBinderData(form.getStoreBinder());
-        }
-
         final OpenbravoService obService = OpenbravoService.getInstance();
-        obService.setShortCircuit(false);
+        obService.setShortCircuit(true);
         obService.setDebug(isDebugging);
         obService.setNoFilterActive(isNoFilterActive());
         obService.setIgnoreCertificateError(isIgnoreCertificateError());
@@ -138,24 +141,19 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
             }};
 
             formData.setStoreBinderData(form.getStoreBinder(), resultRowSet);
-            form.setProperty("_stored", true);
             formData.setPrimaryKeyValue(result.getId());
 
             return resultRowSet;
 
         } catch (OpenbravoClientException e) {
-            Map<String, String> errors = e.getErrors();
-
-            if (errors.isEmpty()) {
-                final String formDefId = form.getPropertyString("id");
-                formData.addFormError(formDefId, e.getMessage());
-            } else {
-                errors.forEach((field, message) -> LogUtil.warn(getClassName(), message));
-                errors.forEach(formData::addFormError);
-
-                LogUtil.error(getClassName(), e, e.getMessage());
+            final Throwable cause = e.getCause();
+            if (cause instanceof OpenbravoCreateRecordException) {
+                final Map<String, String> errors = ((OpenbravoCreateRecordException) cause).getErrors();
+                Optional.ofNullable(errors).map(Map::entrySet).stream().flatMap(Collection::stream)
+                        .forEach(entry -> formData.addFormError(entry.getKey(), entry.getValue()));
             }
 
+            LogUtil.error(getClassName(), e, e.getMessage());
             return null;
         }
     }

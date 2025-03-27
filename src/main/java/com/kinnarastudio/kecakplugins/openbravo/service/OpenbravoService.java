@@ -5,6 +5,7 @@ import com.kinnarastudio.commons.jsonstream.JSONCollectors;
 import com.kinnarastudio.commons.jsonstream.JSONStream;
 import com.kinnarastudio.commons.jsonstream.model.JSONObjectEntry;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
+import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoCreateRecordException;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.RestClientException;
 import org.apache.http.HttpResponse;
 import org.joget.commons.util.LogUtil;
@@ -29,7 +30,7 @@ public class OpenbravoService {
     public final static DateFormat DF = new SimpleDateFormat("yyyy-MM-dd");
 
     private static OpenbravoService instance = null;
-    OpenbravoClientException cutCircuitCause = null;
+    Exception cutCircuitCause = null;
     private boolean ignoreCertificateError = false;
     private boolean isDebug = false;
     private boolean shortCircuit = false;
@@ -41,16 +42,19 @@ public class OpenbravoService {
 
     public static synchronized OpenbravoService getInstance() {
         if (instance == null) instance = new OpenbravoService();
+
         instance.shortCircuit = false;
         instance.cutCircuit = false;
         instance.isDebug = false;
         instance.ignoreCertificateError = false;
         instance.noFilterActive = false;
+
         return instance;
     }
 
     public Map<String, String> delete(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String primaryKey, @Nonnull String username, @Nonnull String password) throws OpenbravoClientException {
-        LogUtil.info(getClass().getName(), "delete : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] primaryKey [" + primaryKey + "] username [" + username + "] password [" + (isDebug ? "*" : password) + "]");
+        LogUtil.info(getClass().getName(), "delete : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] primaryKey [" + primaryKey + "] username [" + username + "]");
+
         try {
             final RestService restService = RestService.getInstance();
             restService.setIgnoreCertificate(ignoreCertificateError);
@@ -110,9 +114,10 @@ public class OpenbravoService {
             throw new OpenbravoClientException(e);
         }
     }
+
     @Nonnull
     public Map<String, String> get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String primaryKey, @Nonnull String username, @Nonnull String password) throws OpenbravoClientException {
-        LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] primaryKey [" + primaryKey + "] username [" + username + "] password [" + (isDebug ? "*" : password) + "]");
+        LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] primaryKey [" + primaryKey + "] username [" + username + "] password [" + password + "]");
 
         try {
             final RestService restService = RestService.getInstance();
@@ -180,7 +185,7 @@ public class OpenbravoService {
     }
 
     public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String[] fields, @Nullable String condition, Object[] arguments, @Nullable String sort, @Nullable Boolean desc, @Nullable Integer startRow, @Nullable Integer endRow) throws OpenbravoClientException {
-        LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "] password [" + (isDebug ? "*" : password) + "]");
+        LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "]");
 
         try {
             final RestService restService = RestService.getInstance();
@@ -271,7 +276,7 @@ public class OpenbravoService {
 
         final StringBuilder sb = new StringBuilder();
         final List<Object> args = new ArrayList<>();
-        if(arguments != null) {
+        if (arguments != null) {
             for (int i = 0; i < arguments.length && m.find(); i++) {
                 final Object argument = arguments[i];
 
@@ -300,6 +305,8 @@ public class OpenbravoService {
     }
 
     public int count(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String where) throws OpenbravoClientException {
+        LogUtil.info(getClass().getName(), "count : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "]");
+
         try {
             final RestService restService = RestService.getInstance();
             restService.setIgnoreCertificate(ignoreCertificateError);
@@ -319,7 +326,8 @@ public class OpenbravoService {
             }
 
             final Map<String, String> headers = Collections.singletonMap("Authorization", restService.getBasicAuthenticationHeader(username, password));
-            final HttpResponse response = restService.doGet(url.toString(), headers);;
+            final HttpResponse response = restService.doGet(url.toString(), headers);
+            ;
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
                 final String responsePayload = br.lines().collect(Collectors.joining());
@@ -350,13 +358,14 @@ public class OpenbravoService {
     }
 
     public synchronized Map<String, Object>[] post(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nonnull Map<String, Object>[] rows) throws OpenbravoClientException {
-        LogUtil.info(getClass().getName(), "post : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "] password [" + (isDebug ? "*" : password) + "]");
+        LogUtil.info(getClass().getName(), "post : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "]");
 
         if (isDebug) {
             for (Map<String, Object> row : rows) {
                 LogUtil.info(getClass().getName(), "post : rows [" + row + "]");
             }
         }
+
         try {
             final RestService restService = RestService.getInstance();
             restService.setIgnoreCertificate(ignoreCertificateError);
@@ -404,7 +413,7 @@ public class OpenbravoService {
                                         final JSONObject jsonErrors = jsonResponse.getJSONObject("errors");
                                         final Map<String, String> errors = JSONStream.of(jsonErrors, Try.onBiFunction(JSONObject::getString))
                                                 .collect(Collectors.toUnmodifiableMap(JSONObjectEntry::getKey, JSONObjectEntry::getValue));
-                                        throw new OpenbravoClientException(errors);
+                                        throw new OpenbravoCreateRecordException(errors);
                                     } else if (status == -1) {
                                         throw new OpenbravoClientException(jsonResponse.getJSONObject("error").getString("message"));
                                     } else {
@@ -425,11 +434,12 @@ public class OpenbravoService {
                                 LogUtil.info(getClass().getName(), "post : data posted [" + data.get("id") + "][" + data.get("_identifier") + "]");
                                 return data;
                             }
-                        } catch (OpenbravoClientException | RestClientException | IOException | JSONException e) {
+                        } catch (OpenbravoClientException | RestClientException | IOException | JSONException |
+                                 OpenbravoCreateRecordException e) {
                             LogUtil.error(getClass().getName(), e, e.getMessage());
                             if (shortCircuit) {
                                 cutCircuit = true;
-                                cutCircuitCause = new OpenbravoClientException("Circuit cut", e);
+                                cutCircuitCause = e;
                                 return null;
                             }
 
@@ -440,7 +450,9 @@ public class OpenbravoService {
                     .toArray(Map[]::new);
 
             if (cutCircuit) {
-                throw cutCircuitCause;
+                throw cutCircuitCause instanceof OpenbravoClientException
+                        ? (OpenbravoClientException) cutCircuitCause
+                        : new OpenbravoClientException(cutCircuitCause);
             }
 
             if (rows.length != result.length)
