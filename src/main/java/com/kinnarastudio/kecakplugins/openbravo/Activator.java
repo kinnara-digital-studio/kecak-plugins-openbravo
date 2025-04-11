@@ -25,6 +25,7 @@ public class Activator implements BundleActivator {
         // Form Binders
         registrationList.add(context.registerService(OpenbravoFormBinder.class.getName(), new OpenbravoFormBinder(), null));
         registrationList.add(context.registerService(OpenbravoGridBinder.class.getName(), new OpenbravoGridBinder(), null));
+        registrationList.add(context.registerService(OpenbravoWorkflowFormBinder.class.getName(), new OpenbravoWorkflowFormBinder(), null));
 
         // Form Options Binders
         registrationList.add(context.registerService(OpenbravoOptionsBinder.class.getName(), new OpenbravoOptionsBinder(), null));

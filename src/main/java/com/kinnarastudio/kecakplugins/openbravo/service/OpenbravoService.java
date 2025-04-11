@@ -223,7 +223,7 @@ public class OpenbravoService {
                 if (desc != null && desc) {
                     sort += " desc";
                 }
-                addUrlParameter(url, "_orderBy", URLEncoder.encode(sort));
+                addUrlParameter(url, "_orderBy", URLEncoder.encode(sort.replaceAll("\\$", ".")));
             }
 
             if (isDebug) {
