@@ -53,11 +53,6 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         final String username = getUsername();
         final String password = getPassword();
 
-        Optional.ofNullable(filterQueryObjects)
-                .stream()
-                .flatMap(Arrays::stream)
-                .forEach(q -> LogUtil.info(getClassName(), "getData : filterQueryObject getOperator [" + q.getOperator() + "] query [" + q.getQuery() + "]"));
-
         final String filterWhereCondition = getFilterWhereCondition(filterQueryObjects);
         final String customWhereCondition = getCustomWhereCondition();
         final String whereCondition;
@@ -102,7 +97,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         }
 
         try {
-            final int result = obService.count(baseUrl, tableEntity, username, password, whereCondition);
+            final int result = obService.count(baseUrl, tableEntity, username, password, whereCondition, null);
             return result;
         } catch (OpenbravoClientException e) {
             LogUtil.info(getClassName(), "getDataTotalRowCount : dataList [" + dataList.getId() + "]");

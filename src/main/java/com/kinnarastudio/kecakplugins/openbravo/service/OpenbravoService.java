@@ -215,7 +215,6 @@ public class OpenbravoService {
 
             if (condition != null && !condition.isEmpty()) {
                 final String where = arguments == null ? condition : formatArguments(condition, arguments);
-                LogUtil.info(OpenbravoService.class.getName(), "_where [" + where + "]");
                 addUrlParameter(url, "_where", URLEncoder.encode(where));
             }
 
@@ -292,7 +291,7 @@ public class OpenbravoService {
                     args.add(DF.format(argument));
                 } else {
                     replacement = "'%s'";
-                    args.add(argument);
+                    args.add(String.valueOf(argument).replaceAll("'", "''"));
                 }
 
                 m.appendReplacement(sb, replacement);
@@ -304,7 +303,7 @@ public class OpenbravoService {
         return String.format(sb.toString(), args.toArray(new Object[0]));
     }
 
-    public int count(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String where) throws OpenbravoClientException {
+    public int count(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String condition, @Nullable Object[] arguments) throws OpenbravoClientException {
         LogUtil.info(getClass().getName(), "count : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "]");
 
         try {
@@ -321,7 +320,8 @@ public class OpenbravoService {
                 addUrlParameter(url, "_noActiveFilter", "true");
             }
 
-            if (where != null && !where.isEmpty()) {
+            if (condition != null && !condition.isEmpty()) {
+                final String where = arguments == null ? condition : formatArguments(condition, arguments);
                 addUrlParameter(url, "_where", URLEncoder.encode(where));
             }
 
@@ -431,7 +431,6 @@ public class OpenbravoService {
                                 if (isDebug) {
                                     LogUtil.info(getClass().getName(), "post : data result posted [" + data + "]");
                                 }
-                                LogUtil.info(getClass().getName(), "post : data posted [" + data.get("id") + "][" + data.get("_identifier") + "]");
                                 return data;
                             }
                         } catch (OpenbravoClientException | RestClientException | IOException | JSONException |

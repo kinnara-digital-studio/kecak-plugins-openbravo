@@ -46,8 +46,6 @@ public class OpenbravoDataListFilter extends TextFieldDataListFilterType {
                 setOr("OR".equalsIgnoreCase(OpenbravoDataListFilter.this.getOperator()));
             }};
 
-            LogUtil.info(getClassName(), "operator [" + queryObject.getOperator() + "] query [" + queryObject.getQuery() + "] arguments [" + String.join(";", queryObject.getValues()) + "]");
-
             return queryObject;
         } else {
             return null;

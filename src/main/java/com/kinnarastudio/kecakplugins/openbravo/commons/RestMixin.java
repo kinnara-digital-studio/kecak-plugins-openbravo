@@ -341,14 +341,13 @@ public interface RestMixin extends PropertyEditable, Unclutter {
             try {
                 final JSONObject jsonData = Optional.of(row)
                         .map(FormRow::entrySet)
-                        .map(Collection::stream)
-                        .orElseGet(Stream::empty)
+                        .stream()
+                        .flatMap(Collection::stream)
                         .collect(JSONCollectors.toJSONObject(e -> String.valueOf(e.getKey()), e -> String.valueOf(e.getValue())));
 
                 final JSONObject jsonRequest = new JSONObject();
                 jsonRequest.put("data", jsonData);
 
-                LogUtil.info(getClassName(), "jsonData : [" + jsonData + "]");
                 httpEntity = getJsonRequestEntity(jsonRequest.toString(), assignment);
             } catch (JSONException e) {
                 throw new OpenbravoClientException(e);
@@ -408,7 +407,9 @@ public interface RestMixin extends PropertyEditable, Unclutter {
                         .map(throwableFunction(HttpEntity::getContent)).ifPresent(inputStream -> {
                             try (BufferedReader br = new BufferedReader(new InputStreamReader(entityEnclosingRequest.getEntity().getContent()))) {
                                 String bodyContent = br.lines().collect(Collectors.joining());
-                                LogUtil.info(getClassName(), "getHttpRequest : Content-Type [" + requestContentType + "] method [" + requestMethod + "] bodyContent [" + bodyContent + "]");
+                                if (isDebugging()) {
+                                    LogUtil.info(getClassName(), "getHttpRequest : Content-Type [" + requestContentType + "] method [" + requestMethod + "] bodyContent [" + bodyContent + "]");
+                                }
                             } catch (IOException ignored) {
                             }
                         });
