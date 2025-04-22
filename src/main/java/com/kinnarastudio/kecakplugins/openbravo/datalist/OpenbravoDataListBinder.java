@@ -214,24 +214,25 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
                 .filter(f -> f.getQuery() != null && !f.getQuery().isEmpty())
                 .map(queryObject -> {
                     final String operator = queryObject.getOperator();
-                    final String query = queryObject.getQuery().replaceAll("\\$_identifier", ".name");
-                    final String condition = getCondition(queryObject, query);
+                    final String condition = getCondition(queryObject);
 
                     return operator + " (" + condition + ")";
                 })
                 .collect(Collectors.joining(" ", "1=1 ", ""));
     }
 
-    protected String getCondition(DataListFilterQueryObject filterQueryObject, String query) {
+    protected String getCondition(DataListFilterQueryObject filterQueryObject) {
         final Pattern p = Pattern.compile("\\?");
         final String[] values = filterQueryObject.getValues();
 
         final StringBuilder condition = new StringBuilder();
+        final String query = filterQueryObject.getQuery().replaceAll("\\$_identifier", ".name");
         final Matcher m = p.matcher(query);
         int i = 0;
         while (m.find()) {
             if (i < values.length) {
-                m.appendReplacement(condition, "'" + values[i] + "'");
+                final String value = values[i].replaceAll("'", "''");
+                m.appendReplacement(condition, "'" + value + "'");
             }
             i++;
         }

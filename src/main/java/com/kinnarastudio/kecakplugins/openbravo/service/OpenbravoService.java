@@ -291,7 +291,7 @@ public class OpenbravoService {
                     args.add(DF.format(argument));
                 } else {
                     replacement = "'%s'";
-                    args.add(String.valueOf(argument).replaceAll("'", "''"));
+                    args.add(String.valueOf(argument).replaceAll(",", "''"));
                 }
 
                 m.appendReplacement(sb, replacement);
