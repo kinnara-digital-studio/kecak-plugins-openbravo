@@ -1,0 +1,164 @@
+[
+  {
+    "title" :  "@@openbravo.openbravoProcessTool@@",
+    "properties": [
+      {
+        "name": "baseUrl",
+        "label": "Base URL",
+        "type": "textfield",
+        "required": "true"
+      },
+      {
+        "label": "Authentication",
+        "type": "header"
+      },
+      {
+        "name": "username",
+        "label": "@@openbravo.username@@",
+        "type": "textfield"
+      },
+      {
+        "name": "password",
+        "label": "@@openbravo.password@@",
+        "type": "textfield"
+      },
+      {
+        "name": "tableEntity",
+        "label": "Table Entity",
+        "type": "textfield"
+      }
+    ]
+  },
+  {
+    "title": "Request",
+    "properties": [
+      {
+        "name": "method",
+        "label": "Method",
+        "type": "selectbox",
+        "value": "post",
+        "options": [
+          {
+            "value": "post",
+            "label": "POST"
+          },
+          {
+            "value": "delete",
+            "label": "DELETE"
+          }
+        ]
+      },
+      {
+        "name" : "dataListId",
+        "label" : "DataList",
+        "type" : "selectbox",
+        "options_ajax":"[CONTEXT_PATH]/web/json/console/app[APP_PATH]/datalist/options",
+        "url" : "[CONTEXT_PATH]/web/property/json[APP_PATH]/getPropertyOptions"
+      },
+      {
+        "name" : "dataListFilter",
+        "label": "@@openbravo.dataListFilter@@",
+        "type": "grid",
+        "columns" : [
+          {
+            "key": "name",
+            "label" : "@@openbravo.dataListFilter.name@@",
+            "required": "true"
+          },
+          {
+            "key" : "value",
+            "label" : "@@openbravo.dataListFilter.value@@"
+          }
+        ]
+      },
+      {
+        "name" : "dataListFieldMapping",
+        "label" : "DataList Field Mapping",
+        "type" : "grid",
+        "control_variable": "method",
+        "control_value": "post",
+        "columns" : [
+          {
+            "key" : "dataListField",
+            "label" : "DataList Field",
+            "required" : "true"
+          },
+          {
+            "key" : "jsonKey",
+            "label" : "Openbravo Field",
+            "required" : "true"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Response",
+    "properties": [
+      {
+        "name" : "formDefId",
+        "label" : "Form",
+        "type" : "selectbox",
+        "options_ajax":"[CONTEXT_PATH]/web/json/console/app[APP_PATH]/forms/options",
+        "url" : "[CONTEXT_PATH]/web/property/json[APP_PATH]/getPropertyOptions"
+      },
+      {
+        "name" : "formFieldMapping",
+        "label" : "Field Mapping",
+        "type" : "grid",
+        "columns" : [
+          {
+            "key" : "jsonKey",
+            "label" : "@@openbravo.jsonPath@@",
+            "required" : "true"
+          }, {
+            "key" : "formField",
+            "label" : "@@openbravo.formField@@",
+            "required" : "true"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Advance",
+    "properties" : [
+      {
+        "name": "noFilterActive",
+        "label": "@@openbravo.noFilterActive@@",
+        "type": "checkbox",
+        "value": "",
+        "options": [
+          {
+            "value": "true",
+            "label": ""
+          }
+        ]
+      },
+      {
+        "name" : "ignoreCertificateError",
+        "label" : "@@openbravo.ignoreCertificateError@@",
+        "type" : "checkbox",
+        "value": "",
+        "options" : [
+          {
+            "value" : "true",
+            "label" : ""
+          }
+        ]
+      },
+      {
+        "name" : "debug",
+        "label" : "@@openbravo.debug@@",
+        "type" : "checkbox",
+        "value": "",
+        "options" : [
+          {
+            "value" : "true",
+            "label" : ""
+          }
+        ]
+      }
+    ]
+  }
+]

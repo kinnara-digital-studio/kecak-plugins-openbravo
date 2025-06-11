@@ -1,6 +1,6 @@
 [
   {
-    "title" :  "@@openbravo.openbravoProcessTool@@",
+    "title": "@@openbravo.openbravoProcessTool@@",
     "properties": [
       {
         "name": "baseUrl",
@@ -41,48 +41,35 @@
           {
             "value": "post",
             "label": "POST"
+          },
+          {
+            "value": "delete",
+            "label": "DELETE"
           }
         ]
       },
       {
-        "name" : "dataListId",
-        "label" : "DataList",
-        "type" : "selectbox",
-        "control_variable": "method",
-        "control_value": "post",
-        "options_ajax":"[CONTEXT_PATH]/web/json/console/app[APP_PATH]/datalist/options",
-        "url" : "[CONTEXT_PATH]/web/property/json[APP_PATH]/getPropertyOptions"
+        "name": "recordId",
+        "label": "Record ID",
+        "type": "textfield",
+        "required": "true"
       },
       {
-        "name" : "dataListFilter",
-        "label": "@@openbravo.dataListFilter@@",
+        "name": "dataListFieldMapping",
+        "label": "DataList Field Mapping",
         "type": "grid",
-        "columns" : [
+        "control_variable": "method",
+        "control_value": "post",
+        "columns": [
           {
-            "key": "name",
-            "label" : "@@openbravo.dataListFilter.name@@",
+            "key": "dataListField",
+            "label": "DataList Field",
             "required": "true"
           },
           {
-            "key" : "value",
-            "label" : "@@openbravo.dataListFilter.value@@"
-          }
-        ]
-      },
-      {
-        "name" : "dataListFieldMapping",
-        "label" : "DataList Field Mapping",
-        "type" : "grid",
-        "columns" : [
-          {
-            "key" : "dataListField",
-            "label" : "DataList Field",
-            "required" : "true"
-          },
-          {
-            "key" : "jsonKey",
-            "label" : "Openbravo Field",
-            "required" : "true"
+            "key": "jsonKey",
+            "label": "Openbravo Field",
+            "required": "true"
           }
         ]
       }
@@ -92,25 +79,26 @@
     "title": "Response",
     "properties": [
       {
-        "name" : "formDefId",
-        "label" : "Form",
-        "type" : "selectbox",
-        "options_ajax":"[CONTEXT_PATH]/web/json/console/app[APP_PATH]/forms/options",
-        "url" : "[CONTEXT_PATH]/web/property/json[APP_PATH]/getPropertyOptions"
+        "name": "formDefId",
+        "label": "Form",
+        "type": "selectbox",
+        "options_ajax": "[CONTEXT_PATH]/web/json/console/app[APP_PATH]/forms/options",
+        "url": "[CONTEXT_PATH]/web/property/json[APP_PATH]/getPropertyOptions"
       },
       {
-        "name" : "formFieldMapping",
-        "label" : "Field Mapping",
-        "type" : "grid",
-        "columns" : [
+        "name": "formFieldMapping",
+        "label": "Field Mapping",
+        "type": "grid",
+        "columns": [
           {
-            "key" : "jsonKey",
-            "label" : "@@openbravo.jsonPath@@",
-            "required" : "true"
-          }, {
-            "key" : "formField",
-            "label" : "@@openbravo.formField@@",
-            "required" : "true"
+            "key": "jsonKey",
+            "label": "@@openbravo.jsonPath@@",
+            "required": "true"
+          },
+          {
+            "key": "formField",
+            "label": "@@openbravo.formField@@",
+            "required": "true"
           }
         ]
       }
@@ -118,7 +106,7 @@
   },
   {
     "title": "Advance",
-    "properties" : [
+    "properties": [
       {
         "name": "noFilterActive",
         "label": "@@openbravo.noFilterActive@@",
@@ -132,26 +120,26 @@
         ]
       },
       {
-        "name" : "ignoreCertificateError",
-        "label" : "@@openbravo.ignoreCertificateError@@",
-        "type" : "checkbox",
+        "name": "ignoreCertificateError",
+        "label": "@@openbravo.ignoreCertificateError@@",
+        "type": "checkbox",
         "value": "",
-        "options" : [
+        "options": [
           {
-            "value" : "true",
-            "label" : ""
+            "value": "true",
+            "label": ""
           }
         ]
       },
       {
-        "name" : "debug",
-        "label" : "@@openbravo.debug@@",
-        "type" : "checkbox",
+        "name": "debug",
+        "label": "@@openbravo.debug@@",
+        "type": "checkbox",
         "value": "",
-        "options" : [
+        "options": [
           {
-            "value" : "true",
-            "label" : ""
+            "value": "true",
+            "label": ""
           }
         ]
       }

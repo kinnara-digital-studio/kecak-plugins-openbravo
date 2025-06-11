@@ -9,6 +9,7 @@ import com.kinnarastudio.kecakplugins.openbravo.form.*;
 import com.kinnarastudio.kecakplugins.openbravo.hashvariable.OpenbravoAssignmentHashVariable;
 import com.kinnarastudio.kecakplugins.openbravo.hashvariable.OpenbravoCurrentUserVariable;
 import com.kinnarastudio.kecakplugins.openbravo.hashvariable.OpenbravoFindWhere;
+import com.kinnarastudio.kecakplugins.openbravo.process.DataListOpenbravoTool;
 import com.kinnarastudio.kecakplugins.openbravo.process.OpenbravoTool;
 import com.kinnarastudio.kecakplugins.openbravo.webservice.OpenbravoProductPhotoWebService;
 import org.osgi.framework.BundleActivator;
@@ -44,6 +45,7 @@ public class Activator implements BundleActivator {
         registrationList.add(context.registerService(OpenbravoDeleteListDataListAction.class.getName(), new OpenbravoDeleteListDataListAction(), null));
 
         // Process Tools
+        registrationList.add(context.registerService(DataListOpenbravoTool.class.getName(), new DataListOpenbravoTool(), null));
         registrationList.add(context.registerService(OpenbravoTool.class.getName(), new OpenbravoTool(), null));
 
         // Hash Variables
