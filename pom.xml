@@ -187,6 +187,9 @@
             <artifactId>kinnara-commons</artifactId>
             <version>4.1.1</version>
         </dependency>
+
+        <!-- Try to recompile this project locally if it is not available -->
+        <!-- git@github.com:kinnara-digital-studio/kinnara-openbravo-api-client.git -->
         <dependency>
             <groupId>com.kinnarastudio</groupId>
             <artifactId>kinnara-openbravo-api-client</artifactId>
