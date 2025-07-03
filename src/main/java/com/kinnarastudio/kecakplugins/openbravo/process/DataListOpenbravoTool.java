@@ -1,7 +1,7 @@
 package com.kinnarastudio.kecakplugins.openbravo.process;
 
 import com.kinnarastudio.kecakplugins.openbravo.service.KecakService;
-import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
+import com.kinnarastudio.obclient.service.OpenbravoService;
 import org.joget.apps.app.service.AppService;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.model.DataList;
@@ -42,7 +42,6 @@ public class DataListOpenbravoTool extends DefaultApplicationPlugin {
     public Object execute(Map map) {
         try {
             final OpenbravoService openbravoService = OpenbravoService.getInstance();
-            openbravoService.setDebug(isDebug());
             openbravoService.setIgnoreCertificateError(ignoreCertificateError());
 
             final KecakService kecakService = KecakService.getInstance();

@@ -3,9 +3,9 @@ package com.kinnarastudio.kecakplugins.openbravo.form;
 import com.kinnarastudio.commons.Try;
 import com.kinnarastudio.commons.jsonstream.JSONStream;
 import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoCreateRecordException;
-import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
+import com.kinnarastudio.obclient.exceptions.OpenbravoClientException;
+import com.kinnarastudio.obclient.service.OpenbravoService;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -77,7 +77,8 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
                     add(row);
                 }};
             }
-        } catch (OpenbravoClientException | IOException | JSONException e) {
+        } catch (OpenbravoClientException | IOException | JSONException |
+                 com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException e) {
             LogUtil.error(getClassName(), e, e.getMessage());
             return null;
         }
@@ -100,7 +101,6 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
 
         final OpenbravoService obService = OpenbravoService.getInstance();
         obService.setShortCircuit(true);
-        obService.setDebug(isDebugging);
         obService.setNoFilterActive(isNoFilterActive());
         obService.setIgnoreCertificateError(isIgnoreCertificateError());
 
@@ -145,7 +145,7 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
 
             return resultRowSet;
 
-        } catch (OpenbravoClientException e) {
+        } catch (com.kinnarastudio.obclient.exceptions.OpenbravoClientException e) {
             final Throwable cause = e.getCause();
             if (cause instanceof OpenbravoCreateRecordException) {
                 final Map<String, String> errors = ((OpenbravoCreateRecordException) cause).getErrors();
@@ -246,7 +246,6 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
 
         final OpenbravoService obService = OpenbravoService.getInstance();
         obService.setShortCircuit(false);
-        obService.setDebug(isDebugging);
         obService.setNoFilterActive(isNoFilterActive());
         obService.setIgnoreCertificateError(isIgnoreCertificateError());
 
@@ -260,7 +259,7 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
                 .flatMap(Collection::stream)
                 .map(FormRow::getId)
                 .forEach(Try.onConsumer(key -> {
-                    final Map<String, String> result = obService.delete(baseUrl, tableEntity, key, username, password);
+                    final Map<String, Object> result = obService.delete(baseUrl, tableEntity, key, username, password);
                     if (isDebugging) {
                         LogUtil.info(getClassName(), "ID [" + result.get("id") + "] from entity [" + tableEntity + "] has been deleted");
                     }

@@ -1,7 +1,7 @@
 package com.kinnarastudio.kecakplugins.openbravo.hashvariable;
 
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
-import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
+import com.kinnarastudio.obclient.exceptions.OpenbravoClientException;
+import com.kinnarastudio.obclient.service.OpenbravoService;
 import org.joget.apps.app.dao.PluginDefaultPropertiesDao;
 import org.joget.apps.app.model.AppDefinition;
 import org.joget.apps.app.model.DefaultHashVariablePlugin;

@@ -1,7 +1,7 @@
 package com.kinnarastudio.kecakplugins.openbravo.hashvariable;
 
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
-import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
+import com.kinnarastudio.obclient.exceptions.OpenbravoClientException;
+import com.kinnarastudio.obclient.service.OpenbravoService;
 import org.joget.apps.app.dao.PluginDefaultPropertiesDao;
 import org.joget.apps.app.model.AppDefinition;
 import org.joget.apps.app.model.DefaultHashVariablePlugin;
@@ -43,7 +43,6 @@ public class OpenbravoFindWhere extends DefaultHashVariablePlugin {
         final String password = getPassword();
         try {
             final OpenbravoService obService = OpenbravoService.getInstance();
-            obService.setDebug(isDebug);
             obService.setIgnoreCertificateError(getIgnoreCertificateError());
 
             final Map<String, Object>[] result = obService.get(baseUrl, tableEntity, username, password, new String[] {field}, where, null, null, null, null, 1);

@@ -1,8 +1,8 @@
 package com.kinnarastudio.kecakplugins.openbravo.form;
 
 import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
-import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
+import com.kinnarastudio.obclient.exceptions.OpenbravoClientException;
+import com.kinnarastudio.obclient.service.OpenbravoService;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.form.model.*;
 import org.joget.commons.util.LogUtil;

@@ -5,12 +5,12 @@ import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.lib.TextFieldDataListFilterType;
 import org.joget.apps.datalist.model.DataList;
 import org.joget.apps.datalist.model.DataListFilterQueryObject;
-import org.joget.commons.util.LogUtil;
 import org.joget.commons.util.StringUtil;
 import org.joget.plugin.base.PluginManager;
 
 import java.util.Arrays;
 import java.util.ResourceBundle;
+import java.util.function.Predicate;
 
 public class OpenbravoDataListFilter extends TextFieldDataListFilterType {
     public final static String LABEL = "Openbravo Custom DataList Filter";
@@ -29,10 +29,10 @@ public class OpenbravoDataListFilter extends TextFieldDataListFilterType {
         }
 
         final String[] arguments = Arrays.stream(getValues(datalist, name))
-                .filter(s -> !s.isEmpty())
+                .filter(Predicate.not(String::isEmpty))
                 .map(s -> s.split(";"))
                 .flatMap(Arrays::stream)
-                .filter(s -> !s.isEmpty())
+                .filter(Predicate.not(String::isEmpty))
                 .toArray(String[]::new);
 
         if (arguments.length > 0) {

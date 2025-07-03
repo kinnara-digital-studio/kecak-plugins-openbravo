@@ -7,6 +7,8 @@ import com.kinnarastudio.commons.jsonstream.model.JSONObjectEntry;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoCreateRecordException;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.RestClientException;
+import com.kinnarastudio.obclient.annotation.ObEntity;
+import com.kinnarastudio.obclient.annotation.ObField;
 import org.apache.http.HttpResponse;
 import org.joget.commons.util.LogUtil;
 import org.json.JSONArray;
@@ -26,6 +28,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+
+/**
+ * Use {@link com.kinnarastudio.obclient.service.OpenbravoService}
+ */
+@Deprecated
 public class OpenbravoService {
     public final static DateFormat DF = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -115,8 +122,15 @@ public class OpenbravoService {
         }
     }
 
+    public <T> Optional<T> get(Class<T> clazz, @Nonnull String baseUrl, @Nonnull String username, @Nonnull String password, @Nonnull String primaryKey) throws OpenbravoClientException {
+        return Arrays.stream(get(clazz, baseUrl, username, password, Collections.singletonMap("id", primaryKey)))
+                .map(o -> (T) o)
+                .findFirst();
+    }
+
+
     @Nonnull
-    public Map<String, String> get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String primaryKey, @Nonnull String username, @Nonnull String password) throws OpenbravoClientException {
+    public Map<String, String> get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nonnull String primaryKey) throws OpenbravoClientException {
         LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] primaryKey [" + primaryKey + "] username [" + username + "] password [" + password + "]");
 
         try {
@@ -179,11 +193,85 @@ public class OpenbravoService {
         }
     }
 
+    public <T> Object[] get(Class<T> clazz, @Nonnull String baseUrl, @Nonnull String username, @Nonnull String password, Map<String, String> filter) throws OpenbravoClientException {
+        final String where = getFilterWhereCondition(filter);
+        return get(clazz, baseUrl, username, password, where, null, null, null, null, null);
+    }
+
     public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, Map<String, String> filter) throws OpenbravoClientException {
         final String where = getFilterWhereCondition(filter);
         return get(baseUrl, tableEntity, username, password, null, where, null, null, null, null, null);
     }
 
+    /**
+     * @param clazz
+     * @param baseUrl
+     * @param username
+     * @param password
+     * @param condition
+     * @param arguments
+     * @param sort
+     * @param desc
+     * @param startRow
+     * @param endRow
+     * @param <T>
+     * @return arrays of T[]
+     * @throws OpenbravoClientException
+     */
+    public <T> Object[] get(@Nonnull Class<T> clazz, @Nonnull String baseUrl, @Nonnull String username, @Nonnull String password, @Nullable String condition, Object[] arguments, @Nullable String sort, @Nullable Boolean desc, @Nullable Integer startRow, @Nullable Integer endRow) throws OpenbravoClientException {
+        final String tableEntity = getTableEntity(clazz);
+        final String[] fields = getFields(clazz);
+        final Map<String, Object>[] records = get(baseUrl, tableEntity, username, password, fields, condition, arguments, sort, desc, startRow, endRow);
+
+        return Arrays.stream(records)
+                .map(Try.onFunction(m -> {
+                    try {
+                        return clazz.getConstructor(Map.class).newInstance(m);
+                    } catch (NoSuchMethodException ignored) {
+                        final T instance = clazz.getConstructor().newInstance();
+
+                        Optional.of(clazz)
+                                .map(Class::getDeclaredFields)
+                                .stream()
+                                .flatMap(Arrays::stream)
+                                .forEach(Try.onConsumer(field -> {
+                                    final String jsonKey = Optional.of(field)
+                                            .map(f -> f.getAnnotation(ObField.class))
+                                            .map(ObField::value)
+                                            .orElseGet(field::getName);
+                                    final String classAttribute = field.getName();
+                                    final String setterName = "set" + classAttribute.substring(0, 1).toUpperCase() + classAttribute.substring(1);
+                                    final Object value = m.get(jsonKey);
+                                    if (value == null) return;
+
+                                    try {
+                                        clazz.getDeclaredMethod(setterName, value.getClass()).invoke(instance, value);
+                                    } catch (NoSuchMethodException e) {
+                                        clazz.getDeclaredMethod(setterName, String.class).invoke(instance, String.valueOf(value));
+                                    }
+                                }));
+
+                        return instance;
+                    }
+                }))
+                .toArray();
+    }
+
+    /**
+     * @param baseUrl
+     * @param tableEntity
+     * @param username
+     * @param password
+     * @param fields
+     * @param condition
+     * @param arguments
+     * @param sort
+     * @param desc
+     * @param startRow
+     * @param endRow
+     * @return
+     * @throws OpenbravoClientException
+     */
     public Map<String, Object>[] get(@Nonnull String baseUrl, @Nonnull String tableEntity, @Nonnull String username, @Nonnull String password, @Nullable String[] fields, @Nullable String condition, Object[] arguments, @Nullable String sort, @Nullable Boolean desc, @Nullable Integer startRow, @Nullable Integer endRow) throws OpenbravoClientException {
         LogUtil.info(getClass().getName(), "get : baseUrl [" + baseUrl + "] tableEntity [" + tableEntity + "] username [" + username + "]");
 
@@ -498,6 +586,26 @@ public class OpenbravoService {
         if (status == -1) {
             throw new OpenbravoClientException("");
         }
+    }
+
+    protected String getTableEntity(Class<?> clazz) {
+        return Optional.of(clazz)
+                .map(c -> c.getAnnotation(ObEntity.class))
+                .map(ObEntity::value)
+                .orElseGet(clazz::getSimpleName);
+    }
+
+    protected String[] getFields(Class<?> clazz) {
+        return Optional.of(clazz)
+                .stream()
+                .map(Class::getDeclaredFields)
+                .flatMap(Arrays::stream)
+                .map(field -> Optional.of(field)
+                        .map(f -> f.getAnnotation(ObField.class))
+                        .map(ObField::value)
+                        .orElseGet(field::getName))
+                .map(s -> s.replaceAll("\\$.*$", ""))
+                .toArray(String[]::new);
     }
 
 }

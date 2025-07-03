@@ -1,8 +1,8 @@
 package com.kinnarastudio.kecakplugins.openbravo.form;
 
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.kecakplugins.openbravo.service.KecakService;
-import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
+import com.kinnarastudio.obclient.exceptions.OpenbravoClientException;
+import com.kinnarastudio.obclient.service.OpenbravoService;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.form.model.*;
 import org.joget.apps.form.service.FormUtil;
@@ -28,7 +28,6 @@ public class OpenbravoGridBinder extends FormBinder
         final OpenbravoService obService = OpenbravoService.getInstance();
         obService.setIgnoreCertificateError(isIgnoringCertificateError());
         obService.setNoFilterActive(isNoFilterActive());
-        obService.setDebug(isDebugging());
 
         try {
             final Map<String, String> filter = Collections.singletonMap(getForeignKey(), primaryKey);
@@ -39,7 +38,7 @@ public class OpenbravoGridBinder extends FormBinder
                     .collect(Collectors.toCollection(() -> new FormRowSet() {{
                         setMultiRow(true);
                     }}));
-        } catch (OpenbravoClientException e) {
+        } catch (com.kinnarastudio.obclient.exceptions.OpenbravoClientException e) {
             LogUtil.error(getClassName(), e, e.getMessage());
             return null;
         }
@@ -47,13 +46,9 @@ public class OpenbravoGridBinder extends FormBinder
 
     @Override
     public FormRowSet store(Element element, FormRowSet rowSet, FormData formData) {
-        final boolean isDebugging = isDebugging();
-
-
         try {
             final KecakService kecakService = KecakService.getInstance();
             final OpenbravoService obService = OpenbravoService.getInstance();
-            obService.setDebug(isDebugging);
             obService.setIgnoreCertificateError(isIgnoringCertificateError());
             obService.setShortCircuit(true);
             obService.setNoFilterActive(isNoFilterActive());

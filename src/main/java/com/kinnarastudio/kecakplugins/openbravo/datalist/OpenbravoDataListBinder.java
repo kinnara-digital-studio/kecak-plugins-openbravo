@@ -1,9 +1,9 @@
 package com.kinnarastudio.kecakplugins.openbravo.datalist;
 
 import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.kecakplugins.openbravo.model.OpenbravoDataListQueryObject;
-import com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService;
+import com.kinnarastudio.obclient.exceptions.OpenbravoClientException;
+import com.kinnarastudio.obclient.service.OpenbravoService;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.model.*;
 import org.joget.commons.util.LogUtil;
@@ -44,7 +44,6 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
     @Override
     public DataListCollection<Map<String, String>> getData(@Nullable DataList dataList, @Nullable Map properties, @Nullable DataListFilterQueryObject[] filterQueryObjects, String sort, @Nullable Boolean desc, @Nullable Integer start, @Nullable Integer rows) {
         final OpenbravoService obService = OpenbravoService.getInstance();
-        obService.setDebug(isDebugging());
         obService.setIgnoreCertificateError(isIgnoreCertificateError());
         obService.setNoFilterActive(isNoFilterActive());
 
@@ -78,8 +77,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
 
     @Override
     public int getDataTotalRowCount(DataList dataList, Map map, DataListFilterQueryObject[] filterQueryObjects) {
-        final OpenbravoService obService = OpenbravoService.getInstance();
-        obService.setDebug(isDebugging());
+        final com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService obService = com.kinnarastudio.kecakplugins.openbravo.service.OpenbravoService.getInstance();
         obService.setIgnoreCertificateError(isIgnoreCertificateError());
         obService.setNoFilterActive(isNoFilterActive());
 
@@ -99,7 +97,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         try {
             final int result = obService.count(baseUrl, tableEntity, username, password, whereCondition, null);
             return result;
-        } catch (OpenbravoClientException e) {
+        } catch (com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException e) {
             LogUtil.info(getClassName(), "getDataTotalRowCount : dataList [" + dataList.getId() + "]");
             LogUtil.error(getClassName(), e, e.getMessage());
             return 0;
