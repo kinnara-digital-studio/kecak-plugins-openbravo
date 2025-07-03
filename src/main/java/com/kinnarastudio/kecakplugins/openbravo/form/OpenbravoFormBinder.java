@@ -77,8 +77,7 @@ public class OpenbravoFormBinder extends FormBinder implements FormLoadElementBi
                     add(row);
                 }};
             }
-        } catch (OpenbravoClientException | IOException | JSONException |
-                 com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException e) {
+        } catch (OpenbravoClientException | IOException | JSONException e) {
             LogUtil.error(getClassName(), e, e.getMessage());
             return null;
         }

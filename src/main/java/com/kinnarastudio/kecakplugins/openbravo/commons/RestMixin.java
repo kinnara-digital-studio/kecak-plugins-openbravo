@@ -6,7 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import com.kinnarastudio.commons.jsonstream.JSONCollectors;
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
+import com.kinnarastudio.obclient.exceptions.OpenbravoClientException;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;

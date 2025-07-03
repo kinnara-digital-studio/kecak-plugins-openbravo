@@ -97,7 +97,7 @@ public class OpenbravoDataListBinder extends DataListBinderDefault implements Re
         try {
             final int result = obService.count(baseUrl, tableEntity, username, password, whereCondition, null);
             return result;
-        } catch (com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException e) {
+        } catch (OpenbravoClientException e) {
             LogUtil.info(getClassName(), "getDataTotalRowCount : dataList [" + dataList.getId() + "]");
             LogUtil.error(getClassName(), e, e.getMessage());
             return 0;

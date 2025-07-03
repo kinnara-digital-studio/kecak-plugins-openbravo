@@ -1,6 +1,6 @@
 package com.kinnarastudio.kecakplugins.openbravo.service;
 
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
+import com.kinnarastudio.obclient.exceptions.OpenbravoClientException;
 import org.joget.apps.app.dao.DatalistDefinitionDao;
 import org.joget.apps.app.dao.FormDefinitionDao;
 import org.joget.apps.app.model.AppDefinition;
@@ -54,7 +54,7 @@ public class KecakService {
         throw new Exception("Error generating form [" + formDefId + "]");
     }
 
-    public DataList generateDataList(String datalistId, Map<String, String[]> filters, WorkflowAssignment workflowAssignment) throws OpenbravoClientException, OpenbravoClientException {
+    public DataList generateDataList(String datalistId, Map<String, String[]> filters, WorkflowAssignment workflowAssignment) throws OpenbravoClientException {
         ApplicationContext appContext = AppUtil.getApplicationContext();
         AppDefinition appDef = AppUtil.getCurrentAppDefinition();
 

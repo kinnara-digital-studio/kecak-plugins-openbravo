@@ -4,6 +4,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.io.BufferedReader;
 
+import com.kinnarastudio.obclient.exceptions.OpenbravoClientException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -20,7 +21,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 
 import java.io.IOException;
 import java.io.InputStreamReader;

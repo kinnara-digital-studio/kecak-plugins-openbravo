@@ -3,7 +3,7 @@ package com.kinnarastudio.kecakplugins.openbravo.form;
 import com.kinnarastudio.commons.Try;
 import com.kinnarastudio.commons.jsonstream.JSONStream;
 import com.kinnarastudio.kecakplugins.openbravo.commons.RestMixin;
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
+import com.kinnarastudio.obclient.exceptions.OpenbravoClientException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
