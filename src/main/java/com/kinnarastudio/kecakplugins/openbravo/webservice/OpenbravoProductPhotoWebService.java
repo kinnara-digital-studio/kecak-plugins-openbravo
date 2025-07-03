@@ -1,6 +1,6 @@
 package com.kinnarastudio.kecakplugins.openbravo.webservice;
 
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.RestClientException;
+import com.kinnarastudio.obclient.exceptions.RestClientException;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;

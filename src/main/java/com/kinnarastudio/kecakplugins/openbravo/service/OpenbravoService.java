@@ -6,9 +6,9 @@ import com.kinnarastudio.commons.jsonstream.JSONStream;
 import com.kinnarastudio.commons.jsonstream.model.JSONObjectEntry;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoClientException;
 import com.kinnarastudio.kecakplugins.openbravo.exceptions.OpenbravoCreateRecordException;
-import com.kinnarastudio.kecakplugins.openbravo.exceptions.RestClientException;
 import com.kinnarastudio.obclient.annotation.ObEntity;
 import com.kinnarastudio.obclient.annotation.ObField;
+import com.kinnarastudio.obclient.service.RestService;
 import org.apache.http.HttpResponse;
 import org.joget.commons.util.LogUtil;
 import org.json.JSONArray;
@@ -83,13 +83,13 @@ public class OpenbravoService {
 
             final int statusCode = restService.getResponseStatus(response);
             if (restService.getStatusGroupCode(statusCode) != 200) {
-                throw new RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
+                throw new com.kinnarastudio.obclient.exceptions.RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
             } else if (statusCode != 200) {
                 LogUtil.warn(getClass().getName(), "Response code [" + statusCode + "] is considered as success");
             }
 
             if (!restService.isJsonResponse(response)) {
-                throw new RestClientException("Content type is not JSON");
+                throw new com.kinnarastudio.obclient.exceptions.RestClientException("Content type is not JSON");
             }
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
@@ -117,7 +117,7 @@ public class OpenbravoService {
                         })
                         .collect(Collectors.toUnmodifiableMap(JSONObjectEntry::getKey, JSONObjectEntry::getValue));
             }
-        } catch (RestClientException | JSONException | IOException e) {
+        } catch (com.kinnarastudio.obclient.exceptions.RestClientException | JSONException | IOException e) {
             throw new OpenbravoClientException(e);
         }
     }
@@ -154,13 +154,13 @@ public class OpenbravoService {
 
             final int statusCode = restService.getResponseStatus(response);
             if (restService.getStatusGroupCode(statusCode) != 200) {
-                throw new RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
+                throw new com.kinnarastudio.obclient.exceptions.RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
             } else if (statusCode != 200) {
                 LogUtil.warn(getClass().getName(), "Response code [" + statusCode + "] is considered as success");
             }
 
             if (!restService.isJsonResponse(response)) {
-                throw new RestClientException("Content type is not JSON");
+                throw new com.kinnarastudio.obclient.exceptions.RestClientException("Content type is not JSON");
             }
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
@@ -188,7 +188,7 @@ public class OpenbravoService {
                         })
                         .collect(Collectors.toUnmodifiableMap(JSONObjectEntry::getKey, JSONObjectEntry::getValue));
             }
-        } catch (RestClientException | JSONException | IOException e) {
+        } catch (com.kinnarastudio.obclient.exceptions.RestClientException | JSONException | IOException e) {
             throw new OpenbravoClientException(e);
         }
     }
@@ -329,13 +329,13 @@ public class OpenbravoService {
 
                 final int statusCode = restService.getResponseStatus(response);
                 if (restService.getStatusGroupCode(statusCode) != 200) {
-                    throw new RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
+                    throw new com.kinnarastudio.obclient.exceptions.RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
                 } else if (statusCode != 200) {
                     LogUtil.warn(getClass().getName(), "Response code [" + statusCode + "] is considered as success");
                 }
 
                 if (!restService.isJsonResponse(response)) {
-                    throw new RestClientException("Content type is not JSON");
+                    throw new com.kinnarastudio.obclient.exceptions.RestClientException("Content type is not JSON");
                 }
 
                 final JSONObject jsonResponse = new JSONObject(responsePayload)
@@ -352,7 +352,7 @@ public class OpenbravoService {
                                 .collect(Collectors.toMap(JSONObjectEntry::getKey, JSONObjectEntry::getValue)))
                         .toArray(Map[]::new);
             }
-        } catch (RestClientException | JSONException | IOException e) {
+        } catch (com.kinnarastudio.obclient.exceptions.RestClientException | JSONException | IOException e) {
             throw new OpenbravoClientException(e);
         }
     }
@@ -426,13 +426,13 @@ public class OpenbravoService {
 
                 final int statusCode = restService.getResponseStatus(response);
                 if (restService.getStatusGroupCode(statusCode) != 200) {
-                    throw new RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
+                    throw new com.kinnarastudio.obclient.exceptions.RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
                 } else if (statusCode != 200) {
                     LogUtil.warn(getClass().getName(), "Response code [" + statusCode + "] is considered as success");
                 }
 
                 if (!restService.isJsonResponse(response)) {
-                    throw new RestClientException("Content type is not JSON");
+                    throw new com.kinnarastudio.obclient.exceptions.RestClientException("Content type is not JSON");
                 }
 
                 final JSONObject jsonResponse = new JSONObject(responsePayload)
@@ -440,7 +440,7 @@ public class OpenbravoService {
 
                 return jsonResponse.getInt("count");
             }
-        } catch (RestClientException | JSONException | IOException e) {
+        } catch (com.kinnarastudio.obclient.exceptions.RestClientException | JSONException | IOException e) {
             throw new OpenbravoClientException(e);
         }
     }
@@ -478,13 +478,13 @@ public class OpenbravoService {
 
                             final int statusCode = restService.getResponseStatus(response);
                             if (restService.getStatusGroupCode(statusCode) != 200) {
-                                throw new RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
+                                throw new com.kinnarastudio.obclient.exceptions.RestClientException("Response code [" + statusCode + "] is not 200 (Success) url [" + url + "]");
                             } else if (statusCode != 200) {
                                 LogUtil.warn(getClass().getName(), "Response code [" + statusCode + "] is considered as success");
                             }
 
                             if (!restService.isJsonResponse(response)) {
-                                throw new RestClientException("Content type is not JSON");
+                                throw new com.kinnarastudio.obclient.exceptions.RestClientException("Content type is not JSON");
                             }
 
                             try (BufferedReader br = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
@@ -521,7 +521,7 @@ public class OpenbravoService {
                                 }
                                 return data;
                             }
-                        } catch (OpenbravoClientException | RestClientException | IOException | JSONException |
+                        } catch (OpenbravoClientException | com.kinnarastudio.obclient.exceptions.RestClientException | IOException | JSONException |
                                  OpenbravoCreateRecordException e) {
                             LogUtil.error(getClass().getName(), e, e.getMessage());
                             if (shortCircuit) {
@@ -546,7 +546,7 @@ public class OpenbravoService {
                 throw new OpenbravoClientException("Request length [" + rows.length + "] and response length [" + result.length + "] are different");
 
             return (Map<String, Object>[]) result;
-        } catch (RestClientException e) {
+        } catch (com.kinnarastudio.obclient.exceptions.RestClientException e) {
             throw new OpenbravoClientException(e);
         }
     }
